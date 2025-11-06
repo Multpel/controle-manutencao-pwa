@@ -117,37 +117,32 @@ document.addEventListener('DOMContentLoaded', function() {
 // FUNÇÕES DE NAVEGAÇÃO
 // ========================================
 
-function showScreen(screenId) {
-    console.log('showScreen chamado:', screenId);
-    
-    // Ocultar todas as screens
+function showScreen(screenId, modo) {
     const screens = document.querySelectorAll('.screen');
-    screens.forEach(screen => {
-        screen.style.display = 'none';
-    });
-    
-    // Ocultar o menu principal
+    screens.forEach(screen => screen.style.display = 'none');
+
     const mainMenu = document.getElementById('main-menu');
-    if (mainMenu) {
-        mainMenu.style.display = 'none';
-    }
-    
-    // Mostrar a screen solicitada
-    if (screenId === 'menu-principal') {
-        if (mainMenu) {
-            mainMenu.style.display = 'block';
-            console.log('✓ Menu principal exibido');
-        }
+    if (mainMenu) mainMenu.style.display = 'none';
+
+    if (screenId === 'main-menu') {
+        if (mainMenu) mainMenu.style.display = 'block';
+        console.log('Menu principal exibido');
     } else {
         const targetScreen = document.getElementById(screenId);
         if (targetScreen) {
             targetScreen.style.display = 'block';
-            console.log('✓ Screen exibida:', screenId);
-        } else {
-            console.error('✗ Screen não encontrada:', screenId);
+            // Resetar form no modo "novo"
+            if (screenId === 'cadastro-equipamento-screen' && modo === 'novo') {
+                const form = document.getElementById('equipamento-form');
+                if (form) form.reset();
+                if (form) form.dataset.mode = "add";
+                if (form) form.dataset.editId = "";
+            }
         }
     }
 }
+
+
 
 function navigateToScreen(screenId) {
     console.log('→ Navegando para:', screenId);
@@ -171,7 +166,7 @@ function navigateToScreen(screenId) {
 
 function backToMenu() {
     console.log('← Voltando ao menu');
-    showScreen('menu-principal');
+    showScreen('main-menu');
 }
 
 function exitApp() {
