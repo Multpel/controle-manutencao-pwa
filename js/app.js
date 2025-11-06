@@ -7,15 +7,8 @@
 // DADOS SIMULADOS
 // ========================================
 
-// Se você já rodou 'npm install firebase'
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-  getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc
-} from "firebase/firestore";
-
-
-const firebaseConfig = {
+// Firebase v8 - Carregue os scripts pelo CDN antes deste arquivo no HTML
+var firebaseConfig = {
   apiKey: "AIzaSyDc4KaKwPYxJUiduqH1WzsHfWx4YEbS6aU",
   authDomain: "multpels-projects-vercel.firebaseapp.com",
   projectId: "multpels-projects-vercel",
@@ -25,9 +18,11 @@ const firebaseConfig = {
   measurementId: "G-D7XZM43V29"
 };
 
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const db = getFirestore(app);
+// Inicialize o Firebase v8
+firebase.initializeApp(firebaseConfig);
+var db = firebase.firestore();
+var analytics = firebase.analytics();
+
 
 let equipamentos = [
     { 
