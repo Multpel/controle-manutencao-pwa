@@ -7,9 +7,13 @@
 // DADOS SIMULADOS
 // ========================================
 
+// Se você já rodou 'npm install firebase'
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import {
+  getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc
+} from "firebase/firestore";
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyDc4KaKwPYxJUiduqH1WzsHfWx4YEbS6aU",
