@@ -14,9 +14,9 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Cache aberto')
-        return cache.addAll(urlsToCache).catch(err => {
-          console.log('Alguns URLs não puderam ser cacheados (isso é ok):', err)
+        console.log('✓ Cache aberto e pronto')
+        return cache.addAll(urlsToCache).catch((err) => {
+          console.warn('⚠️ Alguns arquivos não puderam ser cacheados:', err)
         })
       })
   )
@@ -27,12 +27,14 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
+        // Cache hit - return response
         if (response) {
           return response
         }
         return fetch(event.request)
       })
       .catch(() => {
+        // Network error - return cached index.html
         return caches.match('/index.html')
       })
   )
@@ -46,6 +48,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
+            console.log('Deletando cache antigo:', cacheName)
             return caches.delete(cacheName)
           }
         })
