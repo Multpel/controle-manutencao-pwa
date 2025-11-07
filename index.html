@@ -1,89 +1,347 @@
-<script>
-// Funções de navegação das telas
-function showScreen(screenId, modo) {
-  const screens = document.querySelectorAll('.screen');
-  screens.forEach(screen => screen.style.display = 'none');
-  const mainMenu = document.getElementById('main-menu');
-  if (mainMenu) mainMenu.style.display = 'none';
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Principal - Controle de Manutenção</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+    
+    <div class="container" id="main-menu">
+        <header class="main-header">
+            <h1>Controle de Manutenção</h1>
+        </header>
+        <nav class="main-menu-grid">
+            <a href="#" class="menu-item" data-target-screen="equipamentos-screen">
+                <i class="fas fa-tools"></i>
+                <span>Cadastro de Equipamentos</span>
+            </a>
+            <a href="#" class="menu-item" data-target-screen="agenda-screen">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Agenda de Manutenção</span>
+            </a>
+            <a href="#" class="menu-item" data-target-screen="pendentes-screen">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Manutenções Pendentes</span>
+            </a>
+            <a href="#" class="menu-item" data-target-screen="realizadas-screen">
+                <i class="fas fa-history"></i>
+                <span>Manutenções Realizadas</span>
+            </a>
+            <a href="#" class="menu-item" data-target-screen="agendamento-pesquisa-screen">
+                <i class="fas fa-chart-bar"></i>
+                <span>Relatórios</span>
+            </a>
+            <a href="#" class="menu-item item-exit" onclick="showToast('info', 'O aplicativo será fechado.');">
+                <i class="fas fa-power-off"></i>
+                <span>Sair</span>
+            </a>
+        </nav>
+    </div>
 
-  if (screenId === 'main-menu') {
-    if (mainMenu) mainMenu.style.display = 'block';
-    console.log('Menu principal exibido');
-  } else {
-    const targetScreen = document.getElementById(screenId);
-    if (targetScreen) {
-      targetScreen.style.display = 'block';
-      // Reset form em "novo cadastro"
-      if (screenId === 'cadastro-equipamento-screen' && modo === 'novo') {
-        const form = document.getElementById('equipamento-form');
-        if (form) {
-          form.reset();
-          form.dataset.mode = "add";
-          form.dataset.editId = "";
+    <div class="screen" id="equipamentos-screen" style="display: none;">
+        <div class="screen-wrapper">
+            <header class="screen-header">
+                <h1><i class="fas fa-tools"></i> Equipamentos Cadastrados</h1>
+            </header>
+            <div class="screen-content">
+                <div class="table-container">
+                    <table class="equipamentos-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Etiqueta</th>
+                                <th>Setor</th>
+                                <th>Última Manut.</th>
+                                <th>Próxima Manut.</th> <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="equipamentos-list">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+            <footer class="screen-actions">
+                <button class="btn btn-primary" onclick="showScreen('cadastro-equipamento-screen', 'novo')"><i class="fas fa-plus"></i> Novo Equipamento</button>
+                <button class="btn btn-secondary" onclick="showScreen('main-menu')"><i class="fas fa-arrow-left"></i> Voltar</button>
+            </footer>
+        </div>
+    </div>
+
+    <div class="screen" id="cadastro-equipamento-screen" style="display: none;">
+        <div class="screen-wrapper form-wrapper">
+            <header class="screen-header">
+                <h1><i class="fas fa-clipboard-list"></i> Detalhes do Equipamento</h1>
+            </header>
+            <div class="screen-content">
+                <form id="equipamento-form" onsubmit="salvarEquipamento(event)">
+                    <input type="hidden" id="equipamento-id">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="nome">Nome do Equipamento</label>
+                            <input type="text" id="nome" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="etiqueta">Etiqueta/Serial</label>
+                            <input type="text" id="etiqueta" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="setor">Setor</label>
+                            <input type="text" id="setor" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="ultima-manutencao">Data Última Manutenção</label>
+                            <input type="date" id="ultima-manutencao" required>
+                        </div>
+                    </div>
+            </div>
+            <footer class="form-actions">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar</button>
+                <button type="button" class="btn btn-secondary" onclick="showScreen('equipamentos-screen')"><i class="fas fa-arrow-left"></i> Cancelar</button>
+            </footer>
+            </form>
+        </div>
+    </div>
+
+    <div class="screen" id="agendamento-pesquisa-screen" style="display: none;">
+        <div class="screen-wrapper form-wrapper">
+            <header class="screen-header">
+                <h1><i class="fas fa-search"></i> Agendar Manutenção</h1>
+            </header>
+            <div class="screen-content">
+                <div class="form-group">
+                    <label for="search-equipamento">Pesquisar Equipamento (Nome ou Etiqueta)</label>
+                    <input type="text" id="search-equipamento" onkeyup="filtrarEquipamentosAgendamento(this.value)" placeholder="Digite para pesquisar...">
+                </div>
+
+                <p style="margin-top: 20px; font-weight: 600;">Equipamentos disponíveis:</p>
+                <ul class="equipamento-list" id="equipamentos-disponiveis-list">
+                    </ul>
+            </div>
+            <footer class="screen-actions">
+                <button class="btn btn-secondary" onclick="showScreen('main-menu')"><i class="fas fa-arrow-left"></i> Voltar</button>
+            </footer>
+        </div>
+    </div>
+
+    <div class="screen" id="agendamento-form-screen" style="display: none;">
+        <div class="screen-wrapper form-wrapper">
+            <header class="screen-header">
+                <h1><i class="fas fa-calendar-plus"></i> Agendando</h1>
+            </header>
+            <div class="screen-content">
+                <form id="agendamento-form" onsubmit="salvarAgendamento(event)">
+                    <input type="hidden" id="agendamento-equipamento-id">
+
+                    <div class="form-group">
+                        <label>Equipamento Selecionado</label>
+                        <input type="text" id="agendamento-nome-equipamento" readonly>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label for="data-agendada">Data Agendada para Manutenção</label>
+                        <input type="date" id="data-agendada" required>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label for="agendamento-observacoes">Observações do Agendamento</label>
+                        <textarea id="agendamento-observacoes" rows="3"></textarea>
+                    </div>
+            </div>
+            <footer class="form-actions">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-calendar-check"></i> Confirmar Agendamento</button>
+                <button type="button" class="btn btn-secondary" onclick="showScreen('agendamento-pesquisa-screen')"><i class="fas fa-arrow-left"></i> Voltar</button>
+            </footer>
+            </form>
+        </div>
+    </div>
+
+    <div class="screen" id="agenda-screen" style="display: none;">
+        <div class="screen-wrapper">
+            <header class="screen-header">
+                <h1><i class="fas fa-calendar-alt"></i> Agenda de Manutenção</h1>
+            </header>
+            <div class="screen-content">
+                <div class="table-container">
+                    <table class="equipamentos-table" id="agenda-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Etiqueta</th>
+                                <th>Setor</th>
+                                <th>Data Agendada</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+            <footer class="screen-actions">
+                <button class="btn btn-primary" onclick="showScreen('agendamento-pesquisa-screen')"><i class="fas fa-plus"></i> Novo Agendamento</button>
+                <button class="btn btn-secondary" onclick="showScreen('main-menu')"><i class="fas fa-arrow-left"></i> Voltar</button>
+            </footer>
+        </div>
+    </div>
+
+   <!-- ========== MANUTENÇÕES PENDENTES (SEM LEGENDA) ========== -->
+<div class="screen" id="pendentes-screen" style="display: none;">
+    <div class="screen-wrapper">
+        <header class="screen-header">
+            <h1><i class="fas fa-exclamation-triangle"></i> Manutenções Pendentes</h1>
+        </header>
+        <div class="screen-content">
+            <div class="table-container">
+                <table class="equipamentos-table" id="pendentes-table">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Nome</th>
+                            <th>Etiqueta</th>
+                            <th>Setor</th>
+                            <th>Data Agendada</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <footer class="screen-actions">
+            <button class="btn btn-secondary" onclick="showScreen('main-menu')"><i class="fas fa-arrow-left"></i> Voltar</button>
+        </footer>
+    </div>
+</div>
+
+<!-- ========== MANUTENÇÕES REALIZADAS (COM LEGENDA) ========== -->
+<div class="screen" id="realizadas-screen" style="display: none;">
+    <div class="screen-wrapper">
+        <header class="screen-header">
+            <h1><i class="fas fa-history"></i> Histórico de Manutenções</h1>
+        </header>
+        <div class="screen-content">
+            <div class="table-container">
+                <table class="equipamentos-table" id="realizadas-table">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Etiqueta</th>
+                            <th>Realização</th>
+                            <th>Chamado</th>
+                            <th>Próximo Agend.</th>
+                            <th>Observações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="legend-container">
+            <p>Legenda:</p>
+            <div><span class="status-indicator status-yellow"></span> Em Atraso</div>
+            <div><span class="status-indicator status-green"></span> Em Dia</div>
+        </div>
+        <footer class="screen-actions">
+            <button class="btn btn-secondary" onclick="showScreen('main-menu')"><i class="fas fa-arrow-left"></i> Voltar</button>
+        </footer>
+    </div>
+</div>
+
+
+    <div class="screen" id="realizar-manutencao-screen" style="display: none;">
+        <div class="screen-wrapper form-wrapper">
+            <header class="screen-header">
+                <h1><i class="fas fa-bolt"></i> Executar Manutenção</h1>
+            </header>
+            <div class="screen-content">
+                <form id="realizar-manutencao-form">
+                    <input type="hidden" id="realizar-agendamento-id">
+                    <input type="hidden" id="realizar-equipamento-id">
+
+                    <div class="form-group">
+                        <label>Equipamento</label>
+                        <input type="text" id="realizar-nome-equipamento" readonly>
+                    </div>
+
+                    <div class="form-grid-realizar">
+                        <div class="form-group">
+                            <label>Data Agendada</label>
+                            <input type="date" id="realizar-data-agendada" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="data-realizacao">Data da Realização</label>
+                            <input type="date" id="data-realizacao" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="numero-chamado">Nº do Chamado (Obrigatório)</label>
+                            <input type="text" id="numero-chamado" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label for="realizar-observacoes">Observações da Execução (Opcional)</label>
+                        <textarea id="realizar-observacoes" rows="5"></textarea>
+                    </div>
+            </div>
+            <footer class="form-actions">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Concluir Manutenção</button>
+                <button type="button" class="btn btn-secondary" onclick="showScreen('agenda-screen')"><i class="fas fa-arrow-left"></i> Cancelar</button>
+            </footer>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="modal-editar-agendamento" style="display: none;">
+        <div class="modal-content">
+            <header class="screen-header">
+                <h2 style="font-size: 1.5rem;"><i class="fas fa-edit"></i> Editar Data do Agendamento</h2>
+            </header>
+            <form id="editar-agendamento-form" onsubmit="salvarEdicaoAgendamento(event)">
+                <input type="hidden" id="modal-agendamento-id">
+                
+                <div class="form-group">
+                    <label>Equipamento</label>
+                    <input type="text" id="modal-nome-equipamento" readonly>
+                </div>
+
+                <div class="form-group" style="margin-top: 15px;">
+                    <label for="modal-nova-data">Nova Data Agendada</label>
+                    <input type="date" id="modal-nova-data" required>
+                </div>
+
+                <footer class="form-actions" style="margin-top: 25px; border-top: none; padding-top: 0;">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar Edição</button>
+                    <button type="button" class="btn btn-secondary" onclick="fecharModal()"><i class="fas fa-times"></i> Cancelar</button>
+                </footer>
+            </form>
+        </div>
+    </div>
+
+    <div class="toast-container">
+        </div>
+
+
+    
+    
+    <script>
+        // Lógica para o PWA (Service Worker) - Mantida intacta
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", function() {
+                navigator.serviceWorker.register("/service-worker.js").then(function(registration) {
+                    console.log("ServiceWorker registration successful with scope: ", registration.scope);
+                }, function(err) {
+                    console.log("ServiceWorker registration failed: ", err);
+                });
+            });
         }
-      }
-    }
-  }
-}
-
-function navigateToScreen(screenId) {
-  console.log('→ Navegando para:', screenId);
-  showScreen(screenId);
-  // Carregar dados específicos dependendo da tela
-  setTimeout(() => {
-    if (screenId === 'equipamentos-screen') {
-      carregarEquipamentosDoFirestore();
-    } else if (screenId === 'agenda-screen') {
-      loadAgenda();
-    } else if (screenId === 'pendentes-screen') {
-      loadPendentes();
-    } else if (screenId === 'realizadas-screen') {
-      loadRealizadas();
-    } else if (screenId === 'relatorios-screen') {
-      loadRelatorios();
-    }
-  }, 100);
-}
-
-function backToMenu() {
-  console.log('← Voltando ao menu');
-  showScreen('main-menu');
-}
-
-function exitApp() {
-  if (confirm('Deseja realmente sair da aplicação?')) {
-    window.location.href = 'about:blank';
-  }
-}
-
-// Listener dos botões do menu principal (inclui o botão SAIR sem data-target)
-document.addEventListener('DOMContentLoaded', function() {
-  const menuItems = document.querySelectorAll('.menu-item');
-  menuItems.forEach(item => {
-    item.addEventListener('click', function(e) {
-      e.preventDefault();
-      const targetScreen = this.getAttribute('data-target-screen');
-      if (targetScreen) {
-        navigateToScreen(targetScreen);
-      } else {
-        // Se não tem data-target-screen, executa SAIR
-        exitApp();
-      }
-    });
-  });
-
-  // Demais listeners do app...
-  // Exemplo:
-  const backBtns = document.querySelectorAll('.btn-back');
-  backBtns.forEach(btn => btn.addEventListener('click', backToMenu));
-  // Adapte para o seu projeto!
-});
-
-// Funções stub para evitar erro em navegação
-function carregarEquipamentosDoFirestore() { /* ... */ }
-function loadAgenda() { /* ... */ }
-function loadPendentes() { /* ... */ }
-function loadRealizadas() { /* ... */ }
-function loadRelatorios() { /* ... */ }
-</script>
+    </script>
 <script type="module" src="/src/app.js"></script>
+</body>
+</html>
