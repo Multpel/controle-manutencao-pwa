@@ -8,16 +8,22 @@ import { getAnalytics } from 'firebase/analytics'
 import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore'
 
 // ========================================
-// CONFIGURAÇÃO DO FIREBASE
+// CONFIGURAÇÃO DO FIREBASE (COM VARIÁVEIS DE AMBIENTE)
 // ========================================
 const firebaseConfig = {
-  apiKey: "AIzaSyDc4KaKwPYxJUiduqH1WzsHfWx4YEbS6aU",
-  authDomain: "multpels-projects-vercel.firebaseapp.com",
-  projectId: "multpels-projects-vercel",
-  storageBucket: "multpels-projects-vercel.firebasestorage.app",
-  messagingSenderId: "1038398020775",
-  appId: "1:1038398020775:web:8e91a45634d8b3e36a0f82",
-  measurementId: "G-D7XZM43V29"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+}
+
+// Validar se as variáveis foram carregadas
+if (!firebaseConfig.apiKey) {
+  console.error('❌ Erro: Variáveis de ambiente do Firebase não configuradas!')
+  console.error('Verifique se o arquivo .env.local existe e contém todas as variáveis VITE_FIREBASE_*')
 }
 
 // Inicializar Firebase (v12 - com Vite)
