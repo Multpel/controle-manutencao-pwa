@@ -1,52 +1,89 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0066cc">
-    <meta name="description" content="Sistema PWA para controle de manutenção de equipamentos">
-    <title>Controle de Manutenção</title>
+<script>
+// Funções de navegação das telas
+function showScreen(screenId, modo) {
+  const screens = document.querySelectorAll('.screen');
+  screens.forEach(screen => screen.style.display = 'none');
+  const mainMenu = document.getElementById('main-menu');
+  if (mainMenu) mainMenu.style.display = 'none';
 
-    <link rel="manifest" href="/manifest.json">
-    <link rel="stylesheet" href="/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  if (screenId === 'main-menu') {
+    if (mainMenu) mainMenu.style.display = 'block';
+    console.log('Menu principal exibido');
+  } else {
+    const targetScreen = document.getElementById(screenId);
+    if (targetScreen) {
+      targetScreen.style.display = 'block';
+      // Reset form em "novo cadastro"
+      if (screenId === 'cadastro-equipamento-screen' && modo === 'novo') {
+        const form = document.getElementById('equipamento-form');
+        if (form) {
+          form.reset();
+          form.dataset.mode = "add";
+          form.dataset.editId = "";
+        }
+      }
+    }
+  }
+}
 
-    <!-- App icons -->
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png">
-    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
-</head>
-<body>
-    <!-- Menu Principal -->
-    <div class="container" id="main-menu">
-        <header class="main-header">
-            <h1>Controle de Manutenção</h1>
-        </header>
-        <nav class="main-menu-grid">
-            <a href="#" class="menu-item" data-target-screen="equipamentos-screen">
-                <i class="fas fa-tools"></i>
-                <span>Cadastro de Equipamentos</span>
-            </a>
-            <a href="#" class="menu-item" data-target-screen="agenda-screen">
-                <i class="fas fa-calendar-alt"></i>
-                <span>Agenda de Manutenção</span>
-            </a>
-            <a href="#" class="menu-item" data-target-screen="pendentes-screen">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span>Manutenções Pendentes</span>
-            </a>
-            <a href="#" class="menu-item" data-target-screen="realizadas-screen">
-                <i class="fas fa-history"></i>
-                <span>Manutenções Realizadas</span>
-            </a>
-            <a href="#" class="menu-item" data-target-screen="relatorios-screen">
-                <i class="fas fa-chart-bar"></i>
-                <span>Relatórios</span>
-            </a>
-        </nav>
-    </div>
+function navigateToScreen(screenId) {
+  console.log('→ Navegando para:', screenId);
+  showScreen(screenId);
+  // Carregar dados específicos dependendo da tela
+  setTimeout(() => {
+    if (screenId === 'equipamentos-screen') {
+      carregarEquipamentosDoFirestore();
+    } else if (screenId === 'agenda-screen') {
+      loadAgenda();
+    } else if (screenId === 'pendentes-screen') {
+      loadPendentes();
+    } else if (screenId === 'realizadas-screen') {
+      loadRealizadas();
+    } else if (screenId === 'relatorios-screen') {
+      loadRelatorios();
+    }
+  }, 100);
+}
 
-    <!-- Scripts Vite - CAMINHO CORRIGIDO -->
-    <script type="module" src="/src/app.js"></script>
-</body>
-</html>
+function backToMenu() {
+  console.log('← Voltando ao menu');
+  showScreen('main-menu');
+}
+
+function exitApp() {
+  if (confirm('Deseja realmente sair da aplicação?')) {
+    window.location.href = 'about:blank';
+  }
+}
+
+// Listener dos botões do menu principal (inclui o botão SAIR sem data-target)
+document.addEventListener('DOMContentLoaded', function() {
+  const menuItems = document.querySelectorAll('.menu-item');
+  menuItems.forEach(item => {
+    item.addEventListener('click', function(e) {
+      e.preventDefault();
+      const targetScreen = this.getAttribute('data-target-screen');
+      if (targetScreen) {
+        navigateToScreen(targetScreen);
+      } else {
+        // Se não tem data-target-screen, executa SAIR
+        exitApp();
+      }
+    });
+  });
+
+  // Demais listeners do app...
+  // Exemplo:
+  const backBtns = document.querySelectorAll('.btn-back');
+  backBtns.forEach(btn => btn.addEventListener('click', backToMenu));
+  // Adapte para o seu projeto!
+});
+
+// Funções stub para evitar erro em navegação
+function carregarEquipamentosDoFirestore() { /* ... */ }
+function loadAgenda() { /* ... */ }
+function loadPendentes() { /* ... */ }
+function loadRealizadas() { /* ... */ }
+function loadRelatorios() { /* ... */ }
+</script>
+<script type="module" src="src/app.js"></script>
