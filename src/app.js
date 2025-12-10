@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
     item.addEventListener('click', function(e) {
       e.preventDefault()
       const targetScreen = this.getAttribute('data-target-screen')
-      console.log('Menu item clicado:', targetScreen)
+      console.log('🖱️ Menu item clicado:', targetScreen)
 
       if (targetScreen) {
         navigateToScreen(targetScreen)
@@ -94,9 +94,12 @@ document.addEventListener('DOMContentLoaded', function() {
   })
 
   // Event listener para formulário de equipamentos
-  const equipamentoForm = document.getElementById('equipamentoForm')
+  const equipamentoForm = document.getElementById('equipamento-form')
   if (equipamentoForm) {
-    equipamentoForm.addEventListener('submit', submitEquipamentoForm)
+    equipamentoForm.addEventListener('submit', salvarEquipamento)
+    console.log('✓ Event listener do formulário registrado')
+  } else {
+    console.warn('⚠️ Formulário equipamento-form não encontrado')
   }
 
   // Botões "Voltar" e "Novo Cadastro"
@@ -121,87 +124,147 @@ document.addEventListener('DOMContentLoaded', function() {
 // ========================================
 // FUNÇÕES DE NAVEGAÇÃO
 // ========================================
+
+// Função principal de navegação entre telas
 function showScreen(screenId, modo) {
+  console.log(`[showScreen] Navegando para: ${screenId}, modo: ${modo || 'padrão'}`)
+  
+  // Esconde todas as telas
   const screens = document.querySelectorAll('.screen')
   screens.forEach(screen => screen.style.display = 'none')
+  
   const mainMenu = document.getElementById('main-menu')
   if (mainMenu) mainMenu.style.display = 'none'
 
+  // Exibe menu principal
   if (screenId === 'main-menu') {
-    if (mainMenu) mainMenu.style.display = 'block'
-    console.log('Menu principal exibido')
-  } else {
-    const targetScreen = document.getElementById(screenId)
-    if (targetScreen) {
-      targetScreen.style.display = 'block'
-      if (screenId === 'cadastro-equipamento-screen' && modo === 'novo') {
-        const form = document.getElementById('equipamento-form')
-        if (form) form.reset()
-        if (form) form.dataset.mode = "add"
-        if (form) form.dataset.editId = ""
+    if (mainMenu) {
+      mainMenu.style.display = 'block'
+      console.log('[showScreen] Menu principal exibido')
+    }
+    return
+  }
+
+  // Exibe a tela solicitada
+  const targetScreen = document.getElementById(screenId)
+  if (targetScreen) {
+    targetScreen.style.display = 'block'
+    console.log(`[showScreen] ✓ Tela ${screenId} exibida`)
+    
+    // Tratamento especial para cadastro de equipamento
+    if (screenId === 'cadastro-equipamento-screen') {
+      const form = document.getElementById('equipamento-form')
+      const idInput = document.getElementById('equipamento-id')
+      const headerTitle = document.querySelector('#cadastro-equipamento-screen .screen-header h1')
+      
+      if (modo === 'novo') {
+        console.log('[showScreen] Modo NOVO - limpando formulário')
+        if (form) {
+          form.reset()
+          form.dataset.mode = 'add'
+          delete form.dataset.editId
+        }
+        if (idInput) idInput.value = ''
+        if (headerTitle) {
+          headerTitle.innerHTML = '<i class="fas fa-clipboard-list"></i> Novo Equipamento'
+        }
+      } else if (modo === 'editar') {
+        console.log('[showScreen] Modo EDITAR')
+        if (form) form.dataset.mode = 'edit'
+        if (headerTitle) {
+          headerTitle.innerHTML = '<i class="fas fa-edit"></i> Editar Equipamento'
+        }
       }
     }
+    
+    // Carrega dados da tela
+    setTimeout(() => {
+      if (screenId === 'equipamentos-screen') {
+        carregarEquipamentosDoFirestore()
+      } else if (screenId === 'agenda-screen') {
+        loadAgenda()
+      } else if (screenId === 'pendentes-screen') {
+        loadPendentes()
+      } else if (screenId === 'realizadas-screen') {
+        loadRealizadas()
+      } else if (screenId === 'relatorios-screen') {
+        loadRelatorios()
+      }
+    }, 100)
+    
+  } else {
+    console.error(`[showScreen] ❌ ERRO: Tela "${screenId}" não encontrada`)
   }
 }
 
+// Função auxiliar (compatibilidade)
 function navigateToScreen(screenId) {
-  console.log('→ Navegando para:', screenId)
+  console.log('→ [navigateToScreen] Redirecionando para showScreen:', screenId)
   showScreen(screenId)
-  setTimeout(() => {
-    if (screenId === 'equipamentos-screen') {
-      carregarEquipamentosDoFirestore()
-    } else if (screenId === 'agenda-screen') {
-      loadAgenda()
-    } else if (screenId === 'pendentes-screen') {
-      loadPendentes()
-    } else if (screenId === 'realizadas-screen') {
-      loadRealizadas()
-    } else if (screenId === 'relatorios-screen') {
-      loadRelatorios()
-    }
-  }, 100)
 }
 
+// Função para voltar ao menu
 function backToMenu() {
-  console.log('← Voltando ao menu')
+  console.log('[backToMenu] ← Voltando ao menu principal')
   showScreen('main-menu')
 }
 
+// Função para sair do app
 function exitApp() {
   if (confirm('Deseja realmente sair da aplicação?')) {
     window.location.href = 'about:blank'
   }
 }
 
-// ======================================== 
+// ========================================
 // STUB FUNCTIONS (completar conforme necessário)
 // ========================================
+
 function carregarEquipamentosDoFirestore() {
-  console.log('Carregando equipamentos do Firebase...')
+  console.log('📦 Carregando equipamentos do Firebase...')
+  // TODO: Implementar leitura do Firestore
 }
 
 function loadAgenda() {
-  console.log('Carregando agenda...')
+  console.log('📅 Carregando agenda...')
+  // TODO: Implementar carregamento da agenda
 }
 
 function loadPendentes() {
-  console.log('Carregando manutenções pendentes...')
+  console.log('⚠️ Carregando manutenções pendentes...')
+  // TODO: Implementar carregamento de pendentes
 }
 
 function loadRealizadas() {
-  console.log('Carregando manutenções realizadas...')
+  console.log('✓ Carregando manutenções realizadas...')
+  // TODO: Implementar carregamento de realizadas
 }
 
 function loadRelatorios() {
-  console.log('Carregando relatórios...')
+  console.log('📊 Carregando relatórios...')
+  // TODO: Implementar carregamento de relatórios
 }
 
-function submitEquipamentoForm(e) {
-  console.log('Formulário de equipamento enviado')
+function salvarEquipamento(e) {
+  e.preventDefault()
+  console.log('💾 Salvando equipamento...')
+  // TODO: Implementar salvamento no Firestore
 }
 
 function openCadastroForm() {
-  console.log('Abrindo formulário de cadastro')
+  console.log('📝 Abrindo formulário de cadastro')
+  showScreen('cadastro-equipamento-screen', 'novo')
 }
 
+// ========================================
+// EXPORTAÇÕES GLOBAIS (CRÍTICO!)
+// ========================================
+window.showScreen = showScreen
+window.navigateToScreen = navigateToScreen
+window.backToMenu = backToMenu
+window.exitApp = exitApp
+window.salvarEquipamento = salvarEquipamento
+window.openCadastroForm = openCadastroForm
+
+// Exportação ES6
 export { db, analytics }
