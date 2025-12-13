@@ -36,36 +36,7 @@ console.log('✓ Firebase inicializado')
 // ========================================
 // DADOS SIMULADOS
 // ========================================
-let equipamentos = [
-  { 
-    id: 1, 
-    nome: 'Servidor Principal', 
-    etiqueta: 'SRV-001', 
-    setor: 'TI', 
-    ultimaManutencao: '2025-09-10', 
-    proximaManutencao: '2025-12-10', 
-    descricao: 'Servidor de aplicações' 
-  },
-  { 
-    id: 2, 
-    nome: 'Ar Condicionado Central', 
-    etiqueta: 'AC-002', 
-    setor: 'Infraestrutura', 
-    ultimaManutencao: '2025-08-15', 
-    proximaManutencao: '2025-11-15', 
-    descricao: 'Sistema de climatização' 
-  },
-  { 
-    id: 3, 
-    nome: 'Gerador de Emergência', 
-    etiqueta: 'GER-003', 
-    setor: 'Elétrica', 
-    ultimaManutencao: '2025-09-01', 
-    proximaManutencao: '2025-12-01', 
-    descricao: 'Gerador diesel 500kVA' 
-  }
-]
-
+let equipamentos = []
 let manutencoesRealizadas = []
 let nextEquipamentoId = 4
 
@@ -324,7 +295,6 @@ async function salvarEquipamento(e) {
   }
 }
 
-}
 
 function openCadastroForm() {
   console.log('📝 Abrindo formulário de cadastro')
