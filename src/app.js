@@ -5,7 +5,7 @@
 
 import { initializeApp } from 'firebase/app'
 import { getAnalytics } from 'firebase/analytics'
-import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore'
+import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc, query, where, arrayUnion } from 'firebase/firestore'
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth'
 
 
@@ -325,14 +325,28 @@ async function carregarEquipamentosParaAgendamento() {
     console.error('❌ #equipamentos-disponiveis-list não encontrado')
     return
   }
-
   ul.innerHTML = ''
 
+  // 1) Buscar "agenda" em aberto (aberto == true)
+  const agendadosSet = new Set()
+  try {
+    const agendaRef = collection(db, 'agenda')
+    const q = query(agendaRef, where('aberto', '==', true))
+    const snapAgenda = await getDocs(q)
+    snapAgenda.forEach(d => {
+      const a = d.data()
+      if (a.codigo) agendadosSet.add(a.codigo) // codigo = equipamentoId
+    })
+  } catch (err) {
+    console.error('❌ Erro ao carregar agenda (bloqueio):', err)
+  }
+
+  // 2) Buscar equipamentos e renderizar lista
   try {
     const equipamentosRef = collection(db, 'equipamentos')
-    const snap = await getDocs(equipamentosRef)
+    const snapEq = await getDocs(equipamentosRef)
 
-    if (snap.empty) {
+    if (snapEq.empty) {
       const li = document.createElement('li')
       li.textContent = 'Nenhum equipamento cadastrado.'
       li.classList.add('empty-item')
@@ -340,29 +354,55 @@ async function carregarEquipamentosParaAgendamento() {
       return
     }
 
-    snap.forEach(docSnap => {
+    snapEq.forEach(docSnap => {
       const data = docSnap.data()
+      const equipamentoId = docSnap.id
+      const jaAgendado = agendadosSet.has(equipamentoId)
+
       const li = document.createElement('li')
       li.classList.add('equipamento-item')
-      li.dataset.id = docSnap.id
+      li.dataset.id = equipamentoId
       li.dataset.nome = data.nome || ''
       li.dataset.etiqueta = data.etiqueta || ''
 
-      li.textContent = `${data.nome || ''} — ${data.etiqueta || ''}`
+      const label = document.createElement('label')
+      label.style.display = 'flex'
+      label.style.alignItems = 'center'
+      label.style.gap = '10px'
+      label.style.width = '100%'
+      label.style.cursor = jaAgendado ? 'not-allowed' : 'pointer'
 
-      li.addEventListener('click', () => {
-        // Preenche o form de agendamento e navega
-        document.getElementById('agendamento-equipamento-id').value = docSnap.id
+      const chk = document.createElement('input')
+      chk.type = 'checkbox'
+      chk.disabled = jaAgendado
+
+      const txt = document.createElement('span')
+      txt.textContent = `${data.nome || ''} — ${data.etiqueta || ''}`
+
+      const status = document.createElement('span')
+      status.style.marginLeft = 'auto'
+      status.style.fontWeight = '600'
+      status.textContent = jaAgendado ? 'Status: agendada' : ''
+
+      // Ao marcar, segue para o form
+      chk.addEventListener('change', () => {
+        if (!chk.checked) return
+        document.getElementById('agendamento-equipamento-id').value = equipamentoId
         document.getElementById('agendamento-nome-equipamento').value = data.nome || ''
         showScreen('agendamento-form-screen')
       })
 
+      label.appendChild(chk)
+      label.appendChild(txt)
+      label.appendChild(status)
+      li.appendChild(label)
       ul.appendChild(li)
     })
   } catch (err) {
     console.error('❌ Erro ao carregar equipamentos para agendamento:', err)
   }
 }
+
 
 
 function loadAgenda() {
@@ -477,6 +517,44 @@ async function salvarEquipamento(e) {
   }
 }
 
+async function salvarAgendamento(e) {
+  e.preventDefault()
+
+  const equipamentoId = document.getElementById('agendamento-equipamento-id').value.trim()
+  const equipamentoNome = document.getElementById('agendamento-nome-equipamento').value.trim()
+  const dataPrevista = document.getElementById('data-agendada').value
+  const obs = document.getElementById('agendamento-observacoes').value.trim()
+
+  if (!equipamentoId || !dataPrevista) {
+    alert('Selecione o equipamento e informe a data.')
+    return
+  }
+
+  // Bloqueio: não permitir 2 agendamentos abertos pro mesmo equipamento
+  const agendaRef = collection(db, 'agenda')
+  const q = query(agendaRef, where('aberto', '==', true), where('codigo', '==', equipamentoId))
+  const snap = await getDocs(q)
+  if (!snap.empty) {
+    alert('Este equipamento já possui um agendamento aberto.')
+    showScreen('agendamento-pesquisa-screen')
+    return
+  }
+
+  await addDoc(agendaRef, {
+    codigo: equipamentoId,
+    equipamento: equipamentoNome,
+    dataPrevista,
+    dataRealizada: null,
+    motivo: '',
+    observacoes: obs,
+    aberto: true,
+    criadoEm: new Date().toISOString()
+  })
+
+  alert('Agendamento criado com sucesso!')
+  showScreen('agenda-screen')
+}
+
 
 function openCadastroForm() {
   console.log('📝 Abrindo formulário de cadastro')
@@ -493,6 +571,7 @@ window.exitApp = exitApp
 window.salvarEquipamento = salvarEquipamento
 window.openCadastroForm = openCadastroForm
 window.filtrarEquipamentosAgendamento = filtrarEquipamentosAgendamento
+window.salvarAgendamento = salvarAgendamento
 
 // Exportação ES6
 export { db, analytics }
