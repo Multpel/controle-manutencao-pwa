@@ -112,6 +112,10 @@ function showScreen(screenId, modo) {
   if (mainMenu) mainMenu.style.display = 'none'
 
   // Exibe menu principal
+  if (screenId !== 'login-screen') {
+  localStorage.setItem('lastScreen', screenId)
+}
+
   if (screenId === 'main-menu') {
     if (mainMenu) {
       mainMenu.style.display = 'block'
@@ -229,14 +233,15 @@ async function doLogout() {
 
 // Sempre que logar/deslogar, direciona a tela correta
 onAuthStateChanged(auth, (user) => {
-  if (user) {
-    console.log('✅ Usuário autenticado:', user.email)
-    showScreen('main-menu')
-  } else {
-    console.log('⚠️ Nenhum usuário autenticado')
+  if (!user) {
     showScreen('login-screen')
+    return
   }
+
+  const last = localStorage.getItem('lastScreen') || 'main-menu'
+  showScreen(last)
 })
+
 
 window.doLogin = doLogin
 window.doLogout = doLogout
@@ -247,10 +252,69 @@ window.doLogout = doLogout
 // STUB FUNCTIONS (completar conforme necessário)
 // ========================================
 
-function carregarEquipamentosDoFirestore() {
+async function carregarEquipamentosDoFirestore() {
   console.log('📦 Carregando equipamentos do Firebase...')
-  // TODO: Implementar leitura do Firestore
+
+  const tbody = document.getElementById('equipamentos-tbody')
+  if (!tbody) {
+    console.error('❌ tbody #equipamentos-tbody não encontrado')
+    return
+  }
+
+  tbody.innerHTML = ''
+
+  try {
+    const equipamentosRef = collection(db, 'equipamentos')
+    const snap = await getDocs(equipamentosRef)
+
+    if (snap.empty) {
+      const tr = document.createElement('tr')
+      const td = document.createElement('td')
+      td.colSpan = 6
+      td.textContent = 'Nenhum equipamento cadastrado.'
+      td.style.textAlign = 'center'
+      tr.appendChild(td)
+      tbody.appendChild(tr)
+      return
+    }
+
+    snap.forEach(docSnap => {
+      const data = docSnap.data()
+
+      const tr = document.createElement('tr')
+
+      const tdNome = document.createElement('td')
+      tdNome.textContent = data.nome || ''
+
+      const tdEtiqueta = document.createElement('td')
+      tdEtiqueta.textContent = data.etiqueta || ''
+
+      const tdSetor = document.createElement('td')
+      tdSetor.textContent = data.setor || ''
+
+      const tdUltima = document.createElement('td')
+      tdUltima.textContent = data.ultimaManutencao || '-'
+
+      const tdProxima = document.createElement('td')
+      tdProxima.textContent = data.proximaManutencao || '-'
+
+      const tdAcoes = document.createElement('td')
+      tdAcoes.textContent = '—' // depois colocamos Editar/Excluir
+
+      tr.appendChild(tdNome)
+      tr.appendChild(tdEtiqueta)
+      tr.appendChild(tdSetor)
+      tr.appendChild(tdUltima)
+      tr.appendChild(tdProxima)
+      tr.appendChild(tdAcoes)
+
+      tbody.appendChild(tr)
+    })
+  } catch (err) {
+    console.error('❌ Erro ao carregar equipamentos:', err)
+  }
 }
+
 
 function loadAgenda() {
   console.log('📅 Carregando agenda...')
