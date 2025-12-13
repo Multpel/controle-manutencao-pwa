@@ -405,10 +405,67 @@ async function carregarEquipamentosParaAgendamento() {
 
 
 
-function loadAgenda() {
+async function loadAgenda() {
   console.log('📅 Carregando agenda...')
-  // TODO: Implementar carregamento da agenda
+
+  const table = document.getElementById('agenda-table')
+  if (!table) return
+  const tbody = table.querySelector('tbody')
+  if (!tbody) return
+
+  tbody.innerHTML = ''
+
+  try {
+    const agendaRef = collection(db, 'agenda')
+    const q = query(agendaRef, where('aberto', '==', true))
+    const snap = await getDocs(q)
+
+    if (snap.empty) {
+      const tr = document.createElement('tr')
+      const td = document.createElement('td')
+      td.colSpan = 4
+      td.textContent = 'Nenhum agendamento em aberto.'
+      td.style.textAlign = 'center'
+      tr.appendChild(td)
+      tbody.appendChild(tr)
+      return
+    }
+
+    for (const agSnap of snap.docs) {
+      const ag = agSnap.data()
+
+      // Busca o equipamento para pegar etiqueta/setor
+      const eqRef = doc(db, 'equipamentos', ag.codigo)
+      const eqSnap = await getDoc(eqRef)
+      const eq = eqSnap.exists() ? eqSnap.data() : {}
+
+      const tr = document.createElement('tr')
+
+      const tdNome = document.createElement('td')
+      tdNome.textContent = ag.equipamento || eq.nome || ''
+
+      const tdEtiqueta = document.createElement('td')
+      tdEtiqueta.textContent = eq.etiqueta || '-'
+
+      const tdSetor = document.createElement('td')
+      tdSetor.textContent = eq.setor || '-'
+
+      const tdData = document.createElement('td')
+      tdData.textContent = ag.dataPrevista || '-'
+
+      tr.appendChild(tdNome)
+      tr.appendChild(tdEtiqueta)
+      tr.appendChild(tdSetor)
+      tr.appendChild(tdData)
+
+      tbody.appendChild(tr)
+    }
+  } catch (err) {
+    console.error('❌ Erro ao carregar agenda:', err)
+  }
 }
+
+
 
 function loadPendentes() {
   console.log('⚠️ Carregando manutenções pendentes...')
