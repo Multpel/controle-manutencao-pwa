@@ -245,10 +245,85 @@ function loadRelatorios() {
   // TODO: Implementar carregamento de relatórios
 }
 
-function salvarEquipamento(e) {
+async function salvarEquipamento(e) {
   e.preventDefault()
   console.log('💾 Salvando equipamento...')
-  // TODO: Implementar salvamento no Firestore
+
+  try {
+    // Campos do formulário
+    const idInput = document.getElementById('equipamento-id')
+    const nomeInput = document.getElementById('equipamento-nome')
+    const setorInput = document.getElementById('equipamento-setor')
+    const etiquetaInput = document.getElementById('equipamento-etiqueta')
+
+    if (!nomeInput || !setorInput || !etiquetaInput) {
+      console.error('❌ Campos do formulário não encontrados')
+      alert('Erro interno: campos do formulário não encontrados.')
+      return
+    }
+
+    const codigo = idInput ? idInput.value.trim() : ''
+    const nome = nomeInput.value.trim()
+    const setor = setorInput.value.trim()
+    const etiqueta = etiquetaInput.value.trim()
+
+    // Validação básica
+    if (!nome || !setor || !etiqueta) {
+      alert('Preencha Nome, Etiqueta/Serial e Setor antes de salvar.')
+      return
+    }
+
+    const equipamentosRef = collection(db, 'equipamentos')
+
+    // Verificar unicidade da etiqueta (PK secundária)
+    const snap = await getDocs(equipamentosRef)
+    const etiquetaJaExiste = snap.docs.some(docSnap => {
+      const data = docSnap.data()
+      // Se for edição, ignora o próprio registro
+      if (codigo && docSnap.id === codigo) return false
+      return (data.etiqueta || '').toLowerCase() === etiqueta.toLowerCase()
+    })
+
+    if (etiquetaJaExiste) {
+      alert('Já existe um equipamento cadastrado com essa Etiqueta/Serial.')
+      return
+    }
+
+    // Modo add x edit
+    if (!codigo) {
+      // NOVO equipamento
+      const docRef = await addDoc(equipamentosRef, {
+        nome,
+        setor,
+        etiqueta,
+        criadoEm: new Date().toISOString()
+      })
+
+      console.log('✅ Equipamento criado com ID:', docRef.id)
+      alert('Equipamento cadastrado com sucesso!')
+    } else {
+      // EDITAR equipamento existente
+      const docRef = doc(db, 'equipamentos', codigo)
+
+      await updateDoc(docRef, {
+        nome,
+        setor,
+        etiqueta,
+        atualizadoEm: new Date().toISOString()
+      })
+
+      console.log('✅ Equipamento atualizado, ID:', codigo)
+      alert('Equipamento atualizado com sucesso!')
+    }
+
+    // Após salvar, volta para a lista de equipamentos
+    showScreen('equipamentos-screen')
+  } catch (err) {
+    console.error('❌ Erro ao salvar equipamento:', err)
+    alert('Erro ao salvar equipamento. Tente novamente.')
+  }
+}
+
 }
 
 function openCadastroForm() {
