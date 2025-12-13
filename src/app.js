@@ -6,6 +6,8 @@
 import { initializeApp } from 'firebase/app'
 import { getAnalytics } from 'firebase/analytics'
 import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore'
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth'
+
 
 // ========================================
 // CONFIGURAÇÃO DO FIREBASE (COM VARIÁVEIS DE AMBIENTE)
@@ -30,6 +32,8 @@ if (!firebaseConfig.apiKey) {
 const app = initializeApp(firebaseConfig)
 const analytics = getAnalytics(app)
 const db = getFirestore(app)
+const auth = getAuth(app)
+
 
 console.log('✓ Firebase inicializado')
 
@@ -186,6 +190,58 @@ function exitApp() {
     window.location.href = 'about:blank'
   }
 }
+
+// ========================================
+// AUTH (Login/Logout)
+// ========================================
+
+async function doLogin(e) {
+  e.preventDefault()
+
+  const emailInput = document.getElementById('login-email')
+  const passInput = document.getElementById('login-password')
+
+  const email = emailInput ? emailInput.value.trim() : ''
+  const senha = passInput ? passInput.value : ''
+
+  if (!email || !senha) {
+    alert('Informe e-mail e senha.')
+    return
+  }
+
+  try {
+    await signInWithEmailAndPassword(auth, email, senha)
+    console.log('✅ Login OK:', email)
+  } catch (err) {
+    console.error('❌ Erro no login:', err)
+    alert('Falha no login. Verifique e-mail e senha.')
+  }
+}
+
+async function doLogout() {
+  try {
+    await signOut(auth)
+    console.log('✅ Logout OK')
+  } catch (err) {
+    console.error('❌ Erro no logout:', err)
+  }
+}
+
+// Sempre que logar/deslogar, direciona a tela correta
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    console.log('✅ Usuário autenticado:', user.email)
+    showScreen('main-menu')
+  } else {
+    console.log('⚠️ Nenhum usuário autenticado')
+    showScreen('login-screen')
+  }
+})
+
+window.doLogin = doLogin
+window.doLogout = doLogout
+
+
 
 // ========================================
 // STUB FUNCTIONS (completar conforme necessário)
