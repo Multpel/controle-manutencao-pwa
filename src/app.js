@@ -168,6 +168,8 @@ function showScreen(screenId, modo) {
         loadRealizadas()
       } else if (screenId === 'relatorios-screen') {
         loadRelatorios()
+	  } else if (screenId === 'agendamento-pesquisa-screen') {
+    carregarEquipamentosParaAgendamento()	
       }
     }, 100)
     
@@ -315,6 +317,53 @@ async function carregarEquipamentosDoFirestore() {
   }
 }
 
+async function carregarEquipamentosParaAgendamento() {
+  console.log('📦 Carregando equipamentos para agendamento...')
+
+  const ul = document.getElementById('equipamentos-disponiveis-list')
+  if (!ul) {
+    console.error('❌ #equipamentos-disponiveis-list não encontrado')
+    return
+  }
+
+  ul.innerHTML = ''
+
+  try {
+    const equipamentosRef = collection(db, 'equipamentos')
+    const snap = await getDocs(equipamentosRef)
+
+    if (snap.empty) {
+      const li = document.createElement('li')
+      li.textContent = 'Nenhum equipamento cadastrado.'
+      li.classList.add('empty-item')
+      ul.appendChild(li)
+      return
+    }
+
+    snap.forEach(docSnap => {
+      const data = docSnap.data()
+      const li = document.createElement('li')
+      li.classList.add('equipamento-item')
+      li.dataset.id = docSnap.id
+      li.dataset.nome = data.nome || ''
+      li.dataset.etiqueta = data.etiqueta || ''
+
+      li.textContent = `${data.nome || ''} — ${data.etiqueta || ''}`
+
+      li.addEventListener('click', () => {
+        // Preenche o form de agendamento e navega
+        document.getElementById('agendamento-equipamento-id').value = docSnap.id
+        document.getElementById('agendamento-nome-equipamento').value = data.nome || ''
+        showScreen('agendamento-form-screen')
+      })
+
+      ul.appendChild(li)
+    })
+  } catch (err) {
+    console.error('❌ Erro ao carregar equipamentos para agendamento:', err)
+  }
+}
+
 
 function loadAgenda() {
   console.log('📅 Carregando agenda...')
@@ -335,6 +384,19 @@ function loadRelatorios() {
   console.log('📊 Carregando relatórios...')
   // TODO: Implementar carregamento de relatórios
 }
+
+function filtrarEquipamentosAgendamento(term) {
+  const texto = term.trim().toLowerCase()
+  const itens = document.querySelectorAll('#equipamentos-disponiveis-list .equipamento-item')
+
+  itens.forEach(li => {
+    const nome = (li.dataset.nome || '').toLowerCase()
+    const etiqueta = (li.dataset.etiqueta || '').toLowerCase()
+    const match = nome.includes(texto) || etiqueta.includes(texto)
+    li.style.display = match ? '' : 'none'
+  })
+}
+
 
 async function salvarEquipamento(e) {
   e.preventDefault()
@@ -430,6 +492,7 @@ window.backToMenu = backToMenu
 window.exitApp = exitApp
 window.salvarEquipamento = salvarEquipamento
 window.openCadastroForm = openCadastroForm
+window.filtrarEquipamentosAgendamento = filtrarEquipamentosAgendamento
 
 // Exportação ES6
 export { db, analytics }
