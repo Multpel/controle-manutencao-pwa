@@ -89,11 +89,11 @@ document.addEventListener('DOMContentLoaded', function() {
   })
 
   // Registrar Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(reg => console.log('✓ Service Worker registrado'))
-      .catch(err => console.error('✗ Erro ao registrar Service Worker:', err))
-  }
+// if ('serviceWorker' in navigator) {
+//    navigator.serviceWorker.register('/service-worker.js')
+//      .then(reg => console.log('✓ Service Worker registrado'))
+//      .catch(err => console.error('✗ Erro ao registrar Service Worker:', err))
+//  }
 })
 
 // ========================================
