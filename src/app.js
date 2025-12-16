@@ -403,6 +403,77 @@ async function carregarEquipamentosParaAgendamento() {
   }
 }
 
+function abrirModalReagendar({ agendamentoId, equipamentoNome, dataAtual }) {
+  const backdrop = document.getElementById("modal-editar-agendamento");
+
+  document.getElementById("modal-agendamento-id").value = agendamentoId;
+  document.getElementById("modal-nome-equipamento").value = equipamentoNome || "";
+  document.getElementById("modal-nova-data").value = dataAtual || "";
+  document.getElementById("modal-motivo-cancelamento").value = "";
+
+  backdrop.style.display = "flex";
+}
+
+function fecharModal() {
+  const backdrop = document.getElementById("modal-editar-agendamento");
+  if (backdrop) backdrop.style.display = "none";
+}
+
+async function salvarEdicaoAgendamento(event) {
+  event.preventDefault();
+
+  const idAntigo = document.getElementById("modal-agendamento-id").value.trim();
+  const novaData = document.getElementById("modal-nova-data").value;
+  const motivoCancelamento = document.getElementById("modal-motivo-cancelamento").value.trim();
+
+  if (!idAntigo || !novaData) {
+    alert("Informe a nova data.");
+    return;
+  }
+  if (!motivoCancelamento) {
+    alert("Informe o motivo do reagendamento.");
+    return;
+  }
+
+  const antigoRef = doc(db, "agenda", idAntigo);
+  const antigoSnap = await getDoc(antigoRef);
+
+  if (!antigoSnap.exists()) {
+    alert("Agendamento original não encontrado.");
+    return;
+  }
+
+  const antigo = antigoSnap.data();
+  if (antigo.aberto !== true) {
+    alert("Este agendamento não está mais aberto.");
+    return;
+  }
+
+  const agendaRef = collection(db, "agenda");
+  const novoRef = await addDoc(agendaRef, {
+    codigo: antigo.codigo,
+    equipamento: antigo.equipamento || "",
+    dataPrevista: novaData,
+    dataRealizada: null,
+    motivo: "",
+    observacoes: antigo.observacoes || "",
+    aberto: true,
+    criadoEm: new Date().toISOString(),
+    reagendadoDe: idAntigo
+  });
+
+  await updateDoc(antigoRef, {
+    aberto: false,
+    status: "cancelado",
+    canceladoEm: new Date().toISOString(),
+    motivoCancelamento,
+    reagendadoPara: novoRef.id
+  });
+
+  fecharModal();
+  alert("Reagendado com sucesso!");
+  loadAgenda();
+}
 
 
 async function loadAgenda() {
@@ -451,7 +522,33 @@ async function loadAgenda() {
       tdSetor.textContent = eq.setor || '-'
 
       const tdData = document.createElement('td')
-      tdData.textContent = ag.dataPrevista || '-'
+      const wrap = document.createElement('div')
+	  wrap.style.display = 'flex'
+      wrap.style.alignItems = 'center'
+      wrap.style.justifyContent = 'space-between'
+      wrap.style.gap = '10px'
+	  
+      const spanData = document.createElement('span')
+      spanData.textContent = ag.dataPrevista || '-'
+
+      const btnReagendar = document.createElement('button')
+      btnReagendar.type = 'button'
+      btnReagendar.className = 'btn btn-secondary'
+      btnReagendar.innerHTML = '<i class="fas fa-edit"></i> Reagendar'
+
+      btnReagendar.addEventListener('click', (ev) => {
+        ev.stopPropagation()
+        abrirModalReagendar({
+          agendamentoId: agSnap.id,
+          equipamentoNome: ag.equipamento || eq.nome || '-',
+          dataAtual: ag.dataPrevista || ''
+        })
+      })
+
+      wrap.appendChild(spanData)
+      wrap.appendChild(btnReagendar)
+      tdData.appendChild(wrap)
+
 
       tr.appendChild(tdNome)
       tr.appendChild(tdEtiqueta)
@@ -629,6 +726,10 @@ window.salvarEquipamento = salvarEquipamento
 window.openCadastroForm = openCadastroForm
 window.filtrarEquipamentosAgendamento = filtrarEquipamentosAgendamento
 window.salvarAgendamento = salvarAgendamento
+window.abrirModalReagendar = abrirModalReagendar;
+window.fecharModal = fecharModal;
+window.salvarEdicaoAgendamento = salvarEdicaoAgendamento;
+
 
 // Exportação ES6
 export { db, analytics }
