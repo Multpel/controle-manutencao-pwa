@@ -256,7 +256,6 @@ window.doLogout = doLogout
 
 async function carregarEquipamentosDoFirestore() {
   console.log('📦 Carregando equipamentos do Firebase...')
-
   const tbody = document.getElementById('equipamentos-tbody')
   if (!tbody) {
     console.error('❌ tbody #equipamentos-tbody não encontrado')
@@ -264,11 +263,27 @@ async function carregarEquipamentosDoFirestore() {
   }
 
   tbody.innerHTML = ''
-
+  
   try {
+    // 1. Buscar todos os agendamentos abertos
+    const agendaRef = collection(db, 'agenda')
+    const qAgenda = query(agendaRef, where('aberto', '==', true))
+    const snapAgenda = await getDocs(qAgenda)
+    
+    // Criar mapa: equipamentoId -> dataPrevista
+    const agendamentosMap = new Map()
+    snapAgenda.forEach(docSnap => {
+      const ag = docSnap.data()
+      if (ag.codigo && ag.dataPrevista) {
+        agendamentosMap.set(ag.codigo, ag.dataPrevista)
+      }
+    })
+    console.log(`📅 ${agendamentosMap.size} agendamentos abertos encontrados`)
+
+    // 2. Buscar todos os equipamentos
     const equipamentosRef = collection(db, 'equipamentos')
     const snap = await getDocs(equipamentosRef)
-
+    
     if (snap.empty) {
       const tr = document.createElement('tr')
       const td = document.createElement('td')
@@ -280,42 +295,61 @@ async function carregarEquipamentosDoFirestore() {
       return
     }
 
+    // 3. Renderizar cada equipamento com sua data de agendamento
     snap.forEach(docSnap => {
       const data = docSnap.data()
-
+      const equipamentoId = docSnap.id
+      
       const tr = document.createElement('tr')
-
+      
+      // Coluna Nome
       const tdNome = document.createElement('td')
       tdNome.textContent = data.nome || ''
-
+      
+      // Coluna Etiqueta
       const tdEtiqueta = document.createElement('td')
       tdEtiqueta.textContent = data.etiqueta || ''
-
+      
+      // Coluna Setor
       const tdSetor = document.createElement('td')
       tdSetor.textContent = data.setor || ''
-
+      
+      // Coluna Última Manutenção
       const tdUltima = document.createElement('td')
       tdUltima.textContent = data.ultimaManutencao || '-'
-
+      
+      // Coluna Próxima Manutenção (BUSCA DA AGENDA)
       const tdProxima = document.createElement('td')
-      tdProxima.textContent = data.proximaManutencao || '-'
-
+      const dataAgendada = agendamentosMap.get(equipamentoId)
+      if (dataAgendada) {
+        tdProxima.textContent = dataAgendada
+        tdProxima.style.fontWeight = '600'
+        tdProxima.style.color = '#4a90e2' // Destaque visual
+      } else {
+        tdProxima.textContent = '-'
+        tdProxima.style.color = '#999'
+      }
+      
+      // Coluna Ações
       const tdAcoes = document.createElement('td')
-      tdAcoes.textContent = '—' // depois colocamos Editar/Excluir
-
+      tdAcoes.textContent = '—' // TODO: Editar/Excluir
+      
       tr.appendChild(tdNome)
       tr.appendChild(tdEtiqueta)
       tr.appendChild(tdSetor)
       tr.appendChild(tdUltima)
       tr.appendChild(tdProxima)
       tr.appendChild(tdAcoes)
-
       tbody.appendChild(tr)
     })
+    
+    console.log(`✅ ${snap.size} equipamentos carregados`)
+    
   } catch (err) {
     console.error('❌ Erro ao carregar equipamentos:', err)
   }
 }
+
 
 async function carregarEquipamentosParaAgendamento() {
   console.log('📦 Carregando equipamentos para agendamento...')
