@@ -403,78 +403,115 @@ async function carregarEquipamentosParaAgendamento() {
   }
 }
 
+// ========================================
+// FUNÇÕES DE REAGENDAMENTO
+// ========================================
+
 function abrirModalReagendar({ agendamentoId, equipamentoNome, dataAtual }) {
-  const backdrop = document.getElementById("modal-editar-agendamento");
+  console.log('🔄 Abrindo modal de reagendamento', { agendamentoId, equipamentoNome, dataAtual })
+  
+  const backdrop = document.getElementById("modal-editar-agendamento")
+  if (!backdrop) {
+    console.error('❌ Modal backdrop não encontrado')
+    return
+  }
 
-  document.getElementById("modal-agendamento-id").value = agendamentoId;
-  document.getElementById("modal-nome-equipamento").value = equipamentoNome || "";
-  document.getElementById("modal-nova-data").value = dataAtual || "";
-  document.getElementById("modal-motivo-cancelamento").value = "";
+  document.getElementById("modal-agendamento-id").value = agendamentoId
+  document.getElementById("modal-nome-equipamento").value = equipamentoNome || ""
+  document.getElementById("modal-nova-data").value = dataAtual || ""
+  document.getElementById("modal-motivo-cancelamento").value = ""
 
-  backdrop.style.display = "flex";
+  backdrop.style.display = "flex"
 }
 
 function fecharModal() {
-  const backdrop = document.getElementById("modal-editar-agendamento");
-  if (backdrop) backdrop.style.display = "none";
+  console.log('❌ Fechando modal de reagendamento')
+  
+  const backdrop = document.getElementById("modal-editar-agendamento")
+  if (backdrop) {
+    backdrop.style.display = "none"
+  }
+  
+  // Limpar campos do formulário
+  const form = document.getElementById("editar-agendamento-form")
+  if (form) {
+    form.reset()
+  }
 }
 
 async function salvarEdicaoAgendamento(event) {
-  event.preventDefault();
+  event.preventDefault()
+  console.log('💾 Salvando edição de agendamento...')
 
-  const idAntigo = document.getElementById("modal-agendamento-id").value.trim();
-  const novaData = document.getElementById("modal-nova-data").value;
-  const motivoCancelamento = document.getElementById("modal-motivo-cancelamento").value.trim();
+  const idAntigo = document.getElementById("modal-agendamento-id").value.trim()
+  const novaData = document.getElementById("modal-nova-data").value
+  const motivoCancelamento = document.getElementById("modal-motivo-cancelamento").value.trim()
 
+  // Validações
   if (!idAntigo || !novaData) {
-    alert("Informe a nova data.");
-    return;
+    alert("Informe a nova data.")
+    return
   }
   if (!motivoCancelamento) {
-    alert("Informe o motivo do reagendamento.");
-    return;
+    alert("Informe o motivo do reagendamento.")
+    return
   }
 
-  const antigoRef = doc(db, "agenda", idAntigo);
-  const antigoSnap = await getDoc(antigoRef);
+  try {
+    // 1. Buscar agendamento original
+    const antigoRef = doc(db, "agenda", idAntigo)
+    const antigoSnap = await getDoc(antigoRef)
 
-  if (!antigoSnap.exists()) {
-    alert("Agendamento original não encontrado.");
-    return;
+    if (!antigoSnap.exists()) {
+      alert("Agendamento original não encontrado.")
+      return
+    }
+
+    const antigo = antigoSnap.data()
+    
+    // Validar se ainda está aberto
+    if (antigo.aberto !== true) {
+      alert("Este agendamento não está mais aberto.")
+      return
+    }
+
+    // 2. Criar novo agendamento
+    const agendaRef = collection(db, "agenda")
+    const novoRef = await addDoc(agendaRef, {
+      codigo: antigo.codigo,
+      equipamento: antigo.equipamento || "",
+      dataPrevista: novaData,
+      dataRealizada: null,
+      motivo: "",
+      observacoes: antigo.observacoes || "",
+      aberto: true,
+      criadoEm: new Date().toISOString(),
+      reagendadoDe: idAntigo
+    })
+
+    console.log('✅ Novo agendamento criado:', novoRef.id)
+
+    // 3. Cancelar agendamento antigo
+    await updateDoc(antigoRef, {
+      aberto: false,
+      status: "cancelado",
+      canceladoEm: new Date().toISOString(),
+      motivoCancelamento,
+      reagendadoPara: novoRef.id
+    })
+
+    console.log('✅ Agendamento antigo cancelado')
+
+    // 4. Fechar modal e recarregar agenda
+    fecharModal()
+    alert("Reagendamento realizado com sucesso!")
+    loadAgenda()
+    
+  } catch (err) {
+    console.error('❌ Erro ao reagendar:', err)
+    alert('Erro ao reagendar. Tente novamente.')
   }
-
-  const antigo = antigoSnap.data();
-  if (antigo.aberto !== true) {
-    alert("Este agendamento não está mais aberto.");
-    return;
-  }
-
-  const agendaRef = collection(db, "agenda");
-  const novoRef = await addDoc(agendaRef, {
-    codigo: antigo.codigo,
-    equipamento: antigo.equipamento || "",
-    dataPrevista: novaData,
-    dataRealizada: null,
-    motivo: "",
-    observacoes: antigo.observacoes || "",
-    aberto: true,
-    criadoEm: new Date().toISOString(),
-    reagendadoDe: idAntigo
-  });
-
-  await updateDoc(antigoRef, {
-    aberto: false,
-    status: "cancelado",
-    canceladoEm: new Date().toISOString(),
-    motivoCancelamento,
-    reagendadoPara: novoRef.id
-  });
-
-  fecharModal();
-  alert("Reagendado com sucesso!");
-  loadAgenda();
 }
-
 
 async function loadAgenda() {
   console.log('📅 Carregando agenda...')
@@ -494,7 +531,7 @@ async function loadAgenda() {
     if (snap.empty) {
       const tr = document.createElement('tr')
       const td = document.createElement('td')
-      td.colSpan = 4
+      td.colSpan = 5 // Ajustado para 5 colunas (incluindo Ações)
       td.textContent = 'Nenhum agendamento em aberto.'
       td.style.textAlign = 'center'
       tr.appendChild(td)
@@ -512,25 +549,24 @@ async function loadAgenda() {
 
       const tr = document.createElement('tr')
 
+      // Coluna Nome
       const tdNome = document.createElement('td')
       tdNome.textContent = ag.equipamento || eq.nome || ''
 
+      // Coluna Etiqueta
       const tdEtiqueta = document.createElement('td')
       tdEtiqueta.textContent = eq.etiqueta || '-'
 
+      // Coluna Setor
       const tdSetor = document.createElement('td')
       tdSetor.textContent = eq.setor || '-'
 
+      // Coluna Data Agendada
       const tdData = document.createElement('td')
-      const wrap = document.createElement('div')
-	  wrap.style.display = 'flex'
-      wrap.style.alignItems = 'center'
-      wrap.style.justifyContent = 'space-between'
-      wrap.style.gap = '10px'
-	  
-      const spanData = document.createElement('span')
-      spanData.textContent = ag.dataPrevista || '-'
+      tdData.textContent = ag.dataPrevista || '-'
 
+      // Coluna Ações (5ª coluna)
+      const tdAcoes = document.createElement('td')
       const btnReagendar = document.createElement('button')
       btnReagendar.type = 'button'
       btnReagendar.className = 'btn btn-secondary'
@@ -545,15 +581,13 @@ async function loadAgenda() {
         })
       })
 
-      wrap.appendChild(spanData)
-      wrap.appendChild(btnReagendar)
-      tdData.appendChild(wrap)
-
+      tdAcoes.appendChild(btnReagendar)
 
       tr.appendChild(tdNome)
       tr.appendChild(tdEtiqueta)
       tr.appendChild(tdSetor)
       tr.appendChild(tdData)
+      tr.appendChild(tdAcoes)
 
       tbody.appendChild(tr)
     }
@@ -726,9 +760,9 @@ window.salvarEquipamento = salvarEquipamento
 window.openCadastroForm = openCadastroForm
 window.filtrarEquipamentosAgendamento = filtrarEquipamentosAgendamento
 window.salvarAgendamento = salvarAgendamento
-window.abrirModalReagendar = abrirModalReagendar;
-window.fecharModal = fecharModal;
-window.salvarEdicaoAgendamento = salvarEdicaoAgendamento;
+window.abrirModalReagendar = abrirModalReagendar
+window.fecharModal = fecharModal
+window.salvarEdicaoAgendamento = salvarEdicaoAgendamento
 
 
 // Exportação ES6
