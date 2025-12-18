@@ -162,10 +162,6 @@ function showScreen(screenId, modo) {
         carregarEquipamentosDoFirestore()
       } else if (screenId === 'agenda-screen') {
         loadAgenda()
-      } else if (screenId === 'pendentes-screen') {
-        loadPendentes()
-      } else if (screenId === 'realizadas-screen') {
-        loadRealizadas()
       } else if (screenId === 'relatorios-screen') {
         loadRelatorios()
 	  } else if (screenId === 'agendamento-pesquisa-screen') {
@@ -631,16 +627,6 @@ async function loadAgenda() {
 }
 
 
-
-function loadPendentes() {
-  console.log('⚠️ Carregando manutenções pendentes...')
-  // TODO: Implementar carregamento de pendentes
-}
-
-function loadRealizadas() {
-  console.log('✓ Carregando manutenções realizadas...')
-  // TODO: Implementar carregamento de realizadas
-}
 
 function loadRelatorios() {
   console.log('📊 Carregando relatórios...')
