@@ -251,39 +251,25 @@ window.doLogout = doLogout
 // ========================================
 
 async function carregarEquipamentosDoFirestore() {
-  console.log('📦 Carregando equipamentos do Firebase...')
-  const tbody = document.getElementById('equipamentos-tbody')
-  if (!tbody) {
-    console.error('❌ tbody #equipamentos-tbody não encontrado')
-    return
-  }
-
-  tbody.innerHTML = ''
+  console.log('📦 Carregando equipamentos...')
   
   try {
-    // 1. Buscar todos os agendamentos abertos
-    const agendaRef = collection(db, 'agenda')
-    const qAgenda = query(agendaRef, where('aberto', '==', true))
-    const snapAgenda = await getDocs(qAgenda)
-    
-    // Criar mapa: equipamentoId -> dataPrevista
-    const agendamentosMap = new Map()
-    snapAgenda.forEach(docSnap => {
-      const ag = docSnap.data()
-      if (ag.codigo && ag.dataPrevista) {
-        agendamentosMap.set(ag.codigo, ag.dataPrevista)
-      }
-    })
-    console.log(`📅 ${agendamentosMap.size} agendamentos abertos encontrados`)
+    const tbody = document.querySelector('#equipamentos-tbody')
+    if (!tbody) {
+      console.warn('⚠️ Tabela de equipamentos não encontrada')
+      return
+    }
 
-    // 2. Buscar todos os equipamentos
-    const equipamentosRef = collection(db, 'equipamentos')
-    const snap = await getDocs(equipamentosRef)
-    
+    tbody.innerHTML = '' // Limpa tabela
+
+    // Carrega todos os equipamentos
+    const eqRef = collection(db, 'equipamentos')
+    const snap = await getDocs(eqRef)
+
     if (snap.empty) {
       const tr = document.createElement('tr')
       const td = document.createElement('td')
-      td.colSpan = 6
+      td.colSpan = 6 // São 6 colunas agora
       td.textContent = 'Nenhum equipamento cadastrado.'
       td.style.textAlign = 'center'
       tr.appendChild(td)
@@ -291,60 +277,201 @@ async function carregarEquipamentosDoFirestore() {
       return
     }
 
-    // 3. Renderizar cada equipamento com sua data de agendamento
-    snap.forEach(docSnap => {
-      const data = docSnap.data()
+    // Para cada equipamento, busca última e próxima manutenção
+    for (const docSnap of snap.docs) {
+      const eq = docSnap.data()
       const equipamentoId = docSnap.id
-      
+
       const tr = document.createElement('tr')
-      
-      // Coluna Nome
+
+      // Coluna: Nome
       const tdNome = document.createElement('td')
-      tdNome.textContent = data.nome || ''
-      
-      // Coluna Etiqueta
-      const tdEtiqueta = document.createElement('td')
-      tdEtiqueta.textContent = data.etiqueta || ''
-      
-      // Coluna Setor
-      const tdSetor = document.createElement('td')
-      tdSetor.textContent = data.setor || ''
-      
-      // Coluna Última Manutenção
-      const tdUltima = document.createElement('td')
-      tdUltima.textContent = data.ultimaManutencao || '-'
-      
-      // Coluna Próxima Manutenção (BUSCA DA AGENDA)
-      const tdProxima = document.createElement('td')
-      const dataAgendada = agendamentosMap.get(equipamentoId)
-      if (dataAgendada) {
-        tdProxima.textContent = dataAgendada
-        tdProxima.style.fontWeight = '600'
-        tdProxima.style.color = '#4a90e2' // Destaque visual
-      } else {
-        tdProxima.textContent = '-'
-        tdProxima.style.color = '#999'
-      }
-      
-      // Coluna Ações
-      const tdAcoes = document.createElement('td')
-      tdAcoes.textContent = '—' // TODO: Editar/Excluir
-      
+      tdNome.textContent = eq.nome || '-'
       tr.appendChild(tdNome)
+
+      // Coluna: Etiqueta
+      const tdEtiqueta = document.createElement('td')
+      tdEtiqueta.textContent = eq.etiqueta || '-'
       tr.appendChild(tdEtiqueta)
+
+      // Coluna: Setor
+      const tdSetor = document.createElement('td')
+      tdSetor.textContent = eq.setor || '-'
       tr.appendChild(tdSetor)
-      tr.appendChild(tdUltima)
-      tr.appendChild(tdProxima)
+
+      // ========================================
+      // 🆕 COLUNA: Última Manutenção
+      // ========================================
+      const tdUltimaManutencao = document.createElement('td')
+      tdUltimaManutencao.textContent = 'Carregando...'
+      tdUltimaManutencao.style.fontSize = '0.9em'
+      tr.appendChild(tdUltimaManutencao)
+
+      buscarUltimaManutencao(equipamentoId).then(dataUltima => {
+        if (dataUltima) {
+          const dataFormatada = formatarDataBR(dataUltima)
+          tdUltimaManutencao.textContent = dataFormatada
+          tdUltimaManutencao.style.color = '#28a745' // Verde
+          tdUltimaManutencao.style.fontWeight = 'bold'
+        } else {
+          tdUltimaManutencao.textContent = 'Nunca realizada'
+          tdUltimaManutencao.style.color = '#6c757d' // Cinza
+          tdUltimaManutencao.style.fontStyle = 'italic'
+        }
+      }).catch(err => {
+        console.error('❌ Erro ao buscar última manutenção:', err)
+        tdUltimaManutencao.textContent = '-'
+      })
+
+      // ========================================
+      // 🆕 COLUNA: Próxima Manutenção
+      // ========================================
+      const tdProximaManutencao = document.createElement('td')
+      tdProximaManutencao.textContent = 'Carregando...'
+      tdProximaManutencao.style.fontSize = '0.9em'
+      tr.appendChild(tdProximaManutencao)
+
+      buscarProximaManutencao(equipamentoId).then(dataProxima => {
+        if (dataProxima) {
+          const dataFormatada = formatarDataBR(dataProxima)
+          tdProximaManutencao.textContent = dataFormatada
+          tdProximaManutencao.style.color = '#007bff' // Azul
+          tdProximaManutencao.style.fontWeight = 'bold'
+        } else {
+          tdProximaManutencao.textContent = 'Sem agendamento'
+          tdProximaManutencao.style.color = '#6c757d' // Cinza
+          tdProximaManutencao.style.fontStyle = 'italic'
+        }
+      }).catch(err => {
+        console.error('❌ Erro ao buscar próxima manutenção:', err)
+        tdProximaManutencao.textContent = '-'
+      })
+
+      // ========================================
+      // Coluna: Ações
+      // ========================================
+      const tdAcoes = document.createElement('td')
+      
+      const btnEditar = document.createElement('button')
+      btnEditar.textContent = '✏️ Editar'
+      btnEditar.className = 'btn-small'
+      btnEditar.addEventListener('click', () => abrirModalEditarEquipamento(docSnap.id, eq))
+      
+      const btnExcluir = document.createElement('button')
+      btnExcluir.textContent = '🗑️ Excluir'
+      btnExcluir.className = 'btn-small btn-danger'
+      btnExcluir.addEventListener('click', () => excluirEquipamento(docSnap.id, eq.nome))
+      
+      tdAcoes.appendChild(btnEditar)
+      tdAcoes.appendChild(btnExcluir)
       tr.appendChild(tdAcoes)
+
       tbody.appendChild(tr)
-    })
-    
-    console.log(`✅ ${snap.size} equipamentos carregados`)
-    
+    }
+
+    console.log(`✅ ${snap.size} equipamento(s) carregado(s)`)
+
   } catch (err) {
     console.error('❌ Erro ao carregar equipamentos:', err)
   }
 }
+
+/**
+ * Busca a data da última manutenção realizada de um equipamento
+ * @param {string} equipamentoId - ID do equipamento
+ * @returns {Promise<string|null>} Data no formato "YYYY-MM-DD" ou null se nunca foi realizada
+ */
+async function buscarUltimaManutencao(equipamentoId) {
+  try {
+    const historicoRef = collection(db, 'historico')
+    const q = query(
+      historicoRef,
+      where('equipamentoId', '==', equipamentoId),
+      where('tipo', '==', 'realizada')
+    )
+    const snap = await getDocs(q)
+
+    if (snap.empty) {
+      return null // Nunca teve manutenção
+    }
+
+    // Encontra a manutenção com a data mais recente
+    let ultimaData = null
+    snap.forEach(doc => {
+      const hist = doc.data()
+      const dataRealizada = hist.dataRealizada
+      
+      if (dataRealizada) {
+        if (!ultimaData || dataRealizada > ultimaData) {
+          ultimaData = dataRealizada
+        }
+      }
+    })
+
+    return ultimaData
+
+  } catch (err) {
+    console.error('❌ Erro ao buscar última manutenção:', err)
+    return null
+  }
+}
+
+/**
+ * Busca a data da próxima manutenção agendada de um equipamento
+ * @param {string} equipamentoId - ID do equipamento
+ * @returns {Promise<string|null>} Data no formato "YYYY-MM-DD" ou null se não tem agendamento
+ */
+async function buscarProximaManutencao(equipamentoId) {
+  try {
+    const agendaRef = collection(db, 'agenda')
+    const q = query(
+      agendaRef,
+      where('codigo', '==', equipamentoId),
+      where('aberto', '==', true)
+    )
+    const snap = await getDocs(q)
+
+    if (snap.empty) {
+      return null // Não tem agendamento aberto
+    }
+
+    // Se houver múltiplos agendamentos abertos, pega a data mais próxima
+    let proximaData = null
+    snap.forEach(doc => {
+      const agenda = doc.data()
+      const dataPrevista = agenda.dataPrevista
+      
+      if (dataPrevista) {
+        if (!proximaData || dataPrevista < proximaData) {
+          proximaData = dataPrevista
+        }
+      }
+    })
+
+    return proximaData
+
+  } catch (err) {
+    console.error('❌ Erro ao buscar próxima manutenção:', err)
+    return null
+  }
+}
+
+/**
+ * Formata data ISO para padrão brasileiro
+ * @param {string} dataISO - Data no formato "YYYY-MM-DD"
+ * @returns {string} Data no formato "DD/MM/YYYY"
+ */
+function formatarDataBR(dataISO) {
+  if (!dataISO) return '-'
+  
+  const partes = dataISO.split('-')
+  if (partes.length !== 3) return dataISO
+  
+  const [ano, mes, dia] = partes
+  return `${dia}/${mes}/${ano}`
+}
+
+
 
 
 async function carregarEquipamentosParaAgendamento() {
@@ -700,6 +827,61 @@ function filtrarEquipamentosAgendamento(term) {
     const match = nome.includes(texto) || etiqueta.includes(texto)
     li.style.display = match ? '' : 'none'
   })
+}
+
+/**
+ * Busca a data da última manutenção realizada de um equipamento
+ * @param {string} equipamentoId - ID do equipamento
+ * @returns {Promise<string|null>} Data no formato "YYYY-MM-DD" ou null se nunca foi realizada
+ */
+async function buscarUltimaManutencao(equipamentoId) {
+  try {
+    const historicoRef = collection(db, 'historico')
+    const q = query(
+      historicoRef,
+      where('equipamentoId', '==', equipamentoId),
+      where('tipo', '==', 'realizada')
+    )
+    const snap = await getDocs(q)
+
+    if (snap.empty) {
+      return null // Nunca teve manutenção
+    }
+
+    // Encontra a manutenção com a data mais recente
+    let ultimaData = null
+    snap.forEach(doc => {
+      const hist = doc.data()
+      const dataRealizada = hist.dataRealizada
+      
+      if (dataRealizada) {
+        if (!ultimaData || dataRealizada > ultimaData) {
+          ultimaData = dataRealizada
+        }
+      }
+    })
+
+    return ultimaData
+
+  } catch (err) {
+    console.error('❌ Erro ao buscar última manutenção:', err)
+    return null
+  }
+}
+
+/**
+ * Formata data ISO para padrão brasileiro
+ * @param {string} dataISO - Data no formato "YYYY-MM-DD"
+ * @returns {string} Data no formato "DD/MM/YYYY"
+ */
+function formatarDataBR(dataISO) {
+  if (!dataISO) return '-'
+  
+  const partes = dataISO.split('-')
+  if (partes.length !== 3) return dataISO
+  
+  const [ano, mes, dia] = partes
+  return `${dia}/${mes}/${ano}`
 }
 
 
