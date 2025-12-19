@@ -1070,6 +1070,12 @@ window.salvarAgendamento = salvarAgendamento
 window.abrirModalReagendar = abrirModalReagendar
 window.fecharModal = fecharModal
 window.salvarEdicaoAgendamento = salvarEdicaoAgendamento
+window.abrirModalExecutar = abrirModalExecutar
+window.fecharModalExecutar = fecharModalExecutar
+window.salvarExecucaoManutencao = salvarExecucaoManutencao
+window.abrirModalCancelar = abrirModalCancelar
+window.fecharModalCancelar = fecharModalCancelar
+window.salvarCancelamento = salvarCancelamento
 
 
 // Exportação ES6
