@@ -545,12 +545,10 @@ async function salvarEdicaoAgendamento(event) {
 
 async function loadAgenda() {
   console.log('📅 Carregando agenda...')
-
   const table = document.getElementById('agenda-table')
   if (!table) return
   const tbody = table.querySelector('tbody')
   if (!tbody) return
-
   tbody.innerHTML = ''
 
   try {
@@ -561,7 +559,7 @@ async function loadAgenda() {
     if (snap.empty) {
       const tr = document.createElement('tr')
       const td = document.createElement('td')
-      td.colSpan = 5 // Ajustado para 5 colunas (incluindo Ações)
+      td.colSpan = 5
       td.textContent = 'Nenhum agendamento em aberto.'
       td.style.textAlign = 'center'
       tr.appendChild(td)
@@ -569,15 +567,27 @@ async function loadAgenda() {
       return
     }
 
+    const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
+
     for (const agSnap of snap.docs) {
       const ag = agSnap.data()
-
+      
       // Busca o equipamento para pegar etiqueta/setor
       const eqRef = doc(db, 'equipamentos', ag.codigo)
       const eqSnap = await getDoc(eqRef)
       const eq = eqSnap.exists() ? eqSnap.data() : {}
 
       const tr = document.createElement('tr')
+
+      // Verificar se está atrasada (para indicador visual)
+      const dataAgendada = new Date(ag.dataPrevista + 'T00:00:00')
+      const atrasada = dataAgendada < hoje
+      
+      if (atrasada) {
+        tr.style.color = '#dc3545'
+        tr.style.fontWeight = '600'
+      }
 
       // Coluna Nome
       const tdNome = document.createElement('td')
@@ -595,13 +605,37 @@ async function loadAgenda() {
       const tdData = document.createElement('td')
       tdData.textContent = ag.dataPrevista || '-'
 
-      // Coluna Ações (5ª coluna)
+      // Coluna Ações (3 botões)
       const tdAcoes = document.createElement('td')
+      tdAcoes.style.display = 'flex'
+      tdAcoes.style.gap = '8px'
+      tdAcoes.style.justifyContent = 'center'
+      tdAcoes.style.flexWrap = 'wrap'
+
+      // Botão EXECUTAR
+      const btnExecutar = document.createElement('button')
+      btnExecutar.type = 'button'
+      btnExecutar.className = 'btn btn-primary'
+      btnExecutar.style.fontSize = '0.85rem'
+      btnExecutar.style.padding = '6px 12px'
+      btnExecutar.innerHTML = '<i class="fas fa-check"></i> Executar'
+      btnExecutar.addEventListener('click', (ev) => {
+        ev.stopPropagation()
+        abrirModalExecutar({
+          agendamentoId: agSnap.id,
+          equipamentoId: ag.codigo,
+          equipamentoNome: ag.equipamento || eq.nome || '-',
+          dataAgendada: ag.dataPrevista || ''
+        })
+      })
+
+      // Botão REAGENDAR
       const btnReagendar = document.createElement('button')
       btnReagendar.type = 'button'
       btnReagendar.className = 'btn btn-secondary'
+      btnReagendar.style.fontSize = '0.85rem'
+      btnReagendar.style.padding = '6px 12px'
       btnReagendar.innerHTML = '<i class="fas fa-edit"></i> Reagendar'
-
       btnReagendar.addEventListener('click', (ev) => {
         ev.stopPropagation()
         abrirModalReagendar({
@@ -611,20 +645,43 @@ async function loadAgenda() {
         })
       })
 
+      // Botão CANCELAR
+      const btnCancelar = document.createElement('button')
+      btnCancelar.type = 'button'
+      btnCancelar.className = 'btn btn-secondary'
+      btnCancelar.style.fontSize = '0.85rem'
+      btnCancelar.style.padding = '6px 12px'
+      btnCancelar.style.background = '#dc3545'
+      btnCancelar.style.color = 'white'
+      btnCancelar.style.borderColor = '#dc3545'
+      btnCancelar.innerHTML = '<i class="fas fa-times"></i> Cancelar'
+      btnCancelar.addEventListener('click', (ev) => {
+        ev.stopPropagation()
+        abrirModalCancelar({
+          agendamentoId: agSnap.id,
+          equipamentoId: ag.codigo,
+          equipamentoNome: ag.equipamento || eq.nome || '-',
+          dataAgendada: ag.dataPrevista || ''
+        })
+      })
+
+      tdAcoes.appendChild(btnExecutar)
       tdAcoes.appendChild(btnReagendar)
+      tdAcoes.appendChild(btnCancelar)
 
       tr.appendChild(tdNome)
       tr.appendChild(tdEtiqueta)
       tr.appendChild(tdSetor)
       tr.appendChild(tdData)
       tr.appendChild(tdAcoes)
-
       tbody.appendChild(tr)
     }
+
   } catch (err) {
     console.error('❌ Erro ao carregar agenda:', err)
   }
 }
+
 
 
 
@@ -761,6 +818,236 @@ async function salvarAgendamento(e) {
 
   alert('Agendamento criado com sucesso!')
   showScreen('agenda-screen')
+}
+
+// ========================================
+// FUNÇÕES DE EXECUÇÃO DE MANUTENÇÃO
+// ========================================
+
+function abrirModalExecutar({ agendamentoId, equipamentoId, equipamentoNome, dataAgendada }) {
+  console.log('✅ Abrindo modal de execução', { agendamentoId, equipamentoId, equipamentoNome, dataAgendada })
+  
+  const backdrop = document.getElementById("modal-executar-manutencao")
+  if (!backdrop) {
+    console.error('❌ Modal executar não encontrado')
+    return
+  }
+
+  document.getElementById("exec-agendamento-id").value = agendamentoId
+  document.getElementById("exec-equipamento-id").value = equipamentoId
+  document.getElementById("exec-nome-equipamento").value = equipamentoNome
+  document.getElementById("exec-data-agendada").value = dataAgendada
+  
+  // Define data de realização como hoje por padrão
+  const hoje = new Date().toISOString().split('T')[0]
+  document.getElementById("exec-data-realizacao").value = hoje
+  
+  document.getElementById("exec-numero-chamado").value = ""
+  document.getElementById("exec-observacoes").value = ""
+  
+  backdrop.style.display = "flex"
+}
+
+function fecharModalExecutar() {
+  console.log('❌ Fechando modal de execução')
+  const backdrop = document.getElementById("modal-executar-manutencao")
+  if (backdrop) {
+    backdrop.style.display = "none"
+  }
+  
+  const form = document.getElementById("executar-manutencao-form")
+  if (form) {
+    form.reset()
+  }
+}
+
+async function salvarExecucaoManutencao(event) {
+  event.preventDefault()
+  console.log('💾 Salvando execução de manutenção...')
+  
+  const agendamentoId = document.getElementById("exec-agendamento-id").value.trim()
+  const equipamentoId = document.getElementById("exec-equipamento-id").value.trim()
+  const equipamentoNome = document.getElementById("exec-nome-equipamento").value.trim()
+  const dataAgendada = document.getElementById("exec-data-agendada").value.trim()
+  const dataRealizada = document.getElementById("exec-data-realizacao").value
+  const numeroChamado = document.getElementById("exec-numero-chamado").value.trim()
+  const observacoes = document.getElementById("exec-observacoes").value.trim()
+
+  // Validações
+  if (!agendamentoId || !dataRealizada || !numeroChamado) {
+    alert("Preencha todos os campos obrigatórios.")
+    return
+  }
+
+  try {
+    // 1. Verificar se está em dia ou atrasada
+    const dataAgendadaObj = new Date(dataAgendada + 'T00:00:00')
+    const dataRealizadaObj = new Date(dataRealizada + 'T00:00:00')
+    const emDia = dataRealizadaObj <= dataAgendadaObj
+    const statusCor = emDia ? 'verde' : 'amarelo'
+    
+    console.log(`📊 Status: ${emDia ? 'EM DIA' : 'ATRASADA'} (${statusCor})`)
+
+    // 2. Buscar agendamento para pegar todos os dados
+    const agendaRef = doc(db, "agenda", agendamentoId)
+    const agendaSnap = await getDoc(agendaRef)
+    
+    if (!agendaSnap.exists()) {
+      alert("Agendamento não encontrado.")
+      return
+    }
+
+    const agenda = agendaSnap.data()
+
+    // 3. Gravar no histórico
+    const historicoRef = collection(db, "historico")
+    await addDoc(historicoRef, {
+      agendamentoId: agendamentoId,
+      equipamentoId: equipamentoId,
+      equipamentoNome: equipamentoNome,
+      tipo: "realizada",
+      statusCor: statusCor,
+      
+      dataAgendada: dataAgendada,
+      dataRealizada: dataRealizada,
+      numeroChamado: numeroChamado,
+      observacoes: observacoes,
+      
+      motivoCancelamento: null,
+      motivoReagendamento: null,
+      dataAnterior: null,
+      novaData: null,
+      
+      criadoEm: new Date().toISOString()
+    })
+    console.log('✅ Histórico gravado com sucesso')
+
+    // 4. Fechar agendamento
+    await updateDoc(agendaRef, {
+      aberto: false,
+      status: "realizada",
+      dataRealizada: dataRealizada,
+      numeroChamado: numeroChamado,
+      observacoesExecucao: observacoes,
+      finalizadoEm: new Date().toISOString()
+    })
+    console.log('✅ Agendamento fechado')
+
+    // 5. Fechar modal e recarregar
+    fecharModalExecutar()
+    alert(`Manutenção executada com sucesso!\nStatus: ${emDia ? 'Em dia ✅' : 'Atrasada ⚠️'}`)
+    loadAgenda()
+
+  } catch (err) {
+    console.error('❌ Erro ao executar manutenção:', err)
+    alert('Erro ao executar manutenção. Tente novamente.')
+  }
+}
+
+// ========================================
+// FUNÇÕES DE CANCELAMENTO
+// ========================================
+
+function abrirModalCancelar({ agendamentoId, equipamentoId, equipamentoNome, dataAgendada }) {
+  console.log('🚫 Abrindo modal de cancelamento', { agendamentoId, equipamentoId, equipamentoNome, dataAgendada })
+  
+  const backdrop = document.getElementById("modal-cancelar-agendamento")
+  if (!backdrop) {
+    console.error('❌ Modal cancelar não encontrado')
+    return
+  }
+
+  document.getElementById("cancel-agendamento-id").value = agendamentoId
+  document.getElementById("cancel-equipamento-id").value = equipamentoId
+  document.getElementById("cancel-nome-equipamento").value = equipamentoNome
+  document.getElementById("cancel-data-agendada").value = dataAgendada
+  document.getElementById("cancel-motivo").value = ""
+  
+  backdrop.style.display = "flex"
+}
+
+function fecharModalCancelar() {
+  console.log('❌ Fechando modal de cancelamento')
+  const backdrop = document.getElementById("modal-cancelar-agendamento")
+  if (backdrop) {
+    backdrop.style.display = "none"
+  }
+  
+  const form = document.getElementById("cancelar-agendamento-form")
+  if (form) {
+    form.reset()
+  }
+}
+
+async function salvarCancelamento(event) {
+  event.preventDefault()
+  console.log('💾 Salvando cancelamento...')
+  
+  const agendamentoId = document.getElementById("cancel-agendamento-id").value.trim()
+  const equipamentoId = document.getElementById("cancel-equipamento-id").value.trim()
+  const equipamentoNome = document.getElementById("cancel-nome-equipamento").value.trim()
+  const dataAgendada = document.getElementById("cancel-data-agendada").value.trim()
+  const motivo = document.getElementById("cancel-motivo").value.trim()
+
+  // Validações
+  if (!agendamentoId || !motivo) {
+    alert("Informe o motivo do cancelamento.")
+    return
+  }
+
+  try {
+    // 1. Buscar agendamento
+    const agendaRef = doc(db, "agenda", agendamentoId)
+    const agendaSnap = await getDoc(agendaRef)
+    
+    if (!agendaSnap.exists()) {
+      alert("Agendamento não encontrado.")
+      return
+    }
+
+    const agenda = agendaSnap.data()
+
+    // 2. Gravar no histórico
+    const historicoRef = collection(db, "historico")
+    await addDoc(historicoRef, {
+      agendamentoId: agendamentoId,
+      equipamentoId: equipamentoId,
+      equipamentoNome: equipamentoNome,
+      tipo: "cancelada",
+      statusCor: "vermelho",
+      
+      dataAgendada: dataAgendada,
+      dataRealizada: null,
+      numeroChamado: null,
+      observacoes: agenda.observacoes || "",
+      
+      motivoCancelamento: motivo,
+      motivoReagendamento: null,
+      dataAnterior: null,
+      novaData: null,
+      
+      criadoEm: new Date().toISOString()
+    })
+    console.log('✅ Histórico de cancelamento gravado')
+
+    // 3. Fechar agendamento
+    await updateDoc(agendaRef, {
+      aberto: false,
+      status: "cancelada",
+      motivoCancelamento: motivo,
+      canceladoEm: new Date().toISOString()
+    })
+    console.log('✅ Agendamento cancelado')
+
+    // 4. Fechar modal e recarregar
+    fecharModalCancelar()
+    alert('Agendamento cancelado com sucesso!')
+    loadAgenda()
+
+  } catch (err) {
+    console.error('❌ Erro ao cancelar:', err)
+    alert('Erro ao cancelar agendamento. Tente novamente.')
+  }
 }
 
 

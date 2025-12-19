@@ -361,6 +361,96 @@
 </div>
 
 <!-- ========================================
+     MODAL: EXECUTAR MANUTENÇÃO
+     ======================================== -->
+<div class="modal-backdrop" id="modal-executar-manutencao" style="display:none">
+  <div class="modal-content">
+    <header class="screen-header">
+      <h2 style="font-size: 1.5rem">
+        <i class="fas fa-check-circle"></i> Executar Manutenção
+      </h2>
+    </header>
+    
+    <form id="executar-manutencao-form" onsubmit="salvarExecucaoManutencao(event)">
+      <input type="hidden" id="exec-agendamento-id">
+      <input type="hidden" id="exec-equipamento-id">
+      <input type="hidden" id="exec-data-agendada">
+      
+      <div class="form-group">
+        <label>Equipamento</label>
+        <input type="text" id="exec-nome-equipamento" readonly>
+      </div>
+      
+      <div class="form-group" style="margin-top: 15px;">
+        <label for="exec-data-realizacao">Data da Realização *</label>
+        <input type="date" id="exec-data-realizacao" required>
+      </div>
+      
+      <div class="form-group" style="margin-top: 15px;">
+        <label for="exec-numero-chamado">Nº do Chamado *</label>
+        <input type="text" id="exec-numero-chamado" placeholder="Ex: 12345" required>
+      </div>
+      
+      <div class="form-group" style="margin-top: 15px;">
+        <label for="exec-observacoes">Observações da Execução</label>
+        <textarea id="exec-observacoes" rows="3" placeholder="Descreva os serviços realizados..."></textarea>
+      </div>
+      
+      <footer class="form-actions" style="margin-top: 25px;">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i> Confirmar Execução
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="fecharModalExecutar()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+      </footer>
+    </form>
+  </div>
+</div>
+
+<!-- ========================================
+     MODAL: CANCELAR AGENDAMENTO
+     ======================================== -->
+<div class="modal-backdrop" id="modal-cancelar-agendamento" style="display:none">
+  <div class="modal-content">
+    <header class="screen-header">
+      <h2 style="font-size: 1.5rem">
+        <i class="fas fa-times-circle"></i> Cancelar Agendamento
+      </h2>
+    </header>
+    
+    <form id="cancelar-agendamento-form" onsubmit="salvarCancelamento(event)">
+      <input type="hidden" id="cancel-agendamento-id">
+      <input type="hidden" id="cancel-equipamento-id">
+      
+      <div class="form-group">
+        <label>Equipamento</label>
+        <input type="text" id="cancel-nome-equipamento" readonly>
+      </div>
+      
+      <div class="form-group" style="margin-top: 15px;">
+        <label>Data Agendada</label>
+        <input type="text" id="cancel-data-agendada" readonly>
+      </div>
+      
+      <div class="form-group" style="margin-top: 15px;">
+        <label for="cancel-motivo">Motivo do Cancelamento *</label>
+        <textarea id="cancel-motivo" rows="4" placeholder="Descreva o motivo do cancelamento..." required></textarea>
+      </div>
+      
+      <footer class="form-actions" style="margin-top: 25px;">
+        <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+          <i class="fas fa-ban"></i> Confirmar Cancelamento
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="fecharModalCancelar()">
+          <i class="fas fa-arrow-left"></i> Voltar
+        </button>
+      </footer>
+    </form>
+  </div>
+</div>
+
+<!-- ========================================
      CONTAINER DE TOASTS
      ======================================== -->
 <div class="toast-container">
