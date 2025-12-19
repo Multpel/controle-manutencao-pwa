@@ -416,24 +416,6 @@ async function buscarProximaManutencao(equipamentoId) {
   }
 }
 
-/**
- * Formata data ISO para padrão brasileiro
- * @param {string} dataISO - Data no formato "YYYY-MM-DD"
- * @returns {string} Data no formato "DD/MM/YYYY"
- */
-function formatarDataBR(dataISO) {
-  if (!dataISO) return '-'
-  
-  const partes = dataISO.split('-')
-  if (partes.length !== 3) return dataISO
-  
-  const [ano, mes, dia] = partes
-  return `${dia}/${mes}/${ano}`
-}
-
-
-
-
 async function carregarEquipamentosParaAgendamento() {
   console.log('📦 Carregando equipamentos para agendamento...')
 
