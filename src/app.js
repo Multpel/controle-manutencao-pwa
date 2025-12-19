@@ -933,9 +933,38 @@ async function salvarExecucaoManutencao(event) {
     })
     console.log('✅ Agendamento fechado')
 
-    // 5. Fechar modal e recarregar
+    // ========================================
+    // 5. CRIAR NOVO AGENDAMENTO AUTOMÁTICO PARA 90 DIAS ÚTEIS
+    // ========================================
+    try {
+      // Usa a nova função que verifica conflitos
+      const proximaData = await proximaDataUtilDisponivel(dataRealizada, 90)
+      console.log('📅 Criando novo agendamento automático para:', proximaData)
+
+      const agendaRefNova = collection(db, "agenda")
+      await addDoc(agendaRefNova, {
+        codigo: equipamentoId,
+        equipamento: equipamentoNome,
+        dataPrevista: proximaData,
+        dataRealizada: null,
+        motivo: '',
+        observacoes: '',
+        aberto: true,
+        criadoEm: new Date().toISOString(),
+        geradoAutomaticamente: true,
+        geradoAutomaticamenteDe: agendamentoId
+      })
+
+      console.log('✅ Novo agendamento automático criado para 90 dias úteis')
+    } catch (errAuto) {
+      console.error('❌ Erro ao criar agendamento automático:', errAuto)
+      // Não bloqueia o fluxo principal - apenas loga o erro
+    }
+    // ========================================
+
+    // 6. Fechar modal e recarregar
     fecharModalExecutar()
-    alert(`Manutenção executada com sucesso!\nStatus: ${emDia ? 'Em dia ✅' : 'Atrasada ⚠️'}`)
+    alert(`Manutenção executada com sucesso!\nStatus: ${emDia ? 'Em dia ✅' : 'Atrasada ⚠️'}\n\nPróximo agendamento criado automaticamente! 🎯`)
     loadAgenda()
 
   } catch (err) {
@@ -943,6 +972,134 @@ async function salvarExecucaoManutencao(event) {
     alert('Erro ao executar manutenção. Tente novamente.')
   }
 }
+
+
+// ========================================
+// FUNÇÕES UTILITÁRIAS DE DATA
+// ========================================
+
+/**
+ * Busca feriados do Firestore para o ano especificado
+ * @param {number} ano - Ano desejado (ex: 2026, 2027)
+ * @returns {Promise<string[]>} Array de datas no formato "YYYY-MM-DD"
+ */
+async function getFeriadosDoAno(ano) {
+  try {
+    const feriadosRef = collection(db, 'feriados')
+    const q = query(
+      feriadosRef, 
+      where('data', '>=', `${ano}-01-01`), 
+      where('data', '<=', `${ano}-12-31`)
+    )
+    const snap = await getDocs(q)
+    
+    const feriados = []
+    snap.forEach(doc => {
+      const data = doc.data()
+      if (data.data) {
+        feriados.push(data.data)
+      }
+    })
+    
+    console.log(`📅 ${feriados.length} feriados carregados para ${ano}`)
+    return feriados
+    
+  } catch (err) {
+    console.error(`❌ Erro ao buscar feriados de ${ano}:`, err)
+    return [] // Retorna vazio se houver erro
+  }
+}
+
+/**
+ * Verifica se já existe agendamento para a data
+ * @param {string} dataISO - Data no formato "YYYY-MM-DD"
+ * @returns {Promise<boolean>} true se já existe agendamento
+ */
+async function existeAgendamentoNaData(dataISO) {
+  try {
+    const agendaRef = collection(db, 'agenda')
+    const q = query(
+      agendaRef, 
+      where('aberto', '==', true), 
+      where('dataPrevista', '==', dataISO)
+    )
+    const snap = await getDocs(q)
+    return !snap.empty
+  } catch (err) {
+    console.error('❌ Erro ao verificar data:', err)
+    return false
+  }
+}
+
+/**
+ * Encontra a próxima data útil disponível (sem conflito de agendamento)
+ * @param {string} dataISO - Data base no formato "YYYY-MM-DD"
+ * @param {number} qtdDiasUteis - Quantidade de dias úteis a adicionar
+ * @returns {Promise<string>} Data calculada e disponível no formato "YYYY-MM-DD"
+ */
+async function proximaDataUtilDisponivel(dataISO, qtdDiasUteis) {
+  const dataBase = new Date(dataISO + 'T00:00:00')
+  const anoBase = dataBase.getFullYear()
+  const anoSeguinte = anoBase + 1
+  
+  // Busca feriados de 2 anos (caso atravesse o ano)
+  const feriadosAnoAtual = await getFeriadosDoAno(anoBase)
+  const feriadosAnoSeguinte = await getFeriadosDoAno(anoSeguinte)
+  const todosFeriados = [...feriadosAnoAtual, ...feriadosAnoSeguinte]
+  const feriadosSet = new Set(todosFeriados)
+  
+  let d = new Date(dataISO + 'T00:00:00')
+  let adicionados = 0
+  
+  // Primeira fase: adiciona os dias úteis normalmente
+  while (adicionados < qtdDiasUteis) {
+    d.setDate(d.getDate() + 1)
+    
+    const diaSemana = d.getDay()
+    const dataFormatada = d.toISOString().split('T')[0]
+    
+    const ehFimDeSemana = (diaSemana === 0 || diaSemana === 6)
+    const ehFeriado = feriadosSet.has(dataFormatada)
+    
+    if (!ehFimDeSemana && !ehFeriado) {
+      adicionados++
+    }
+  }
+  
+  // Segunda fase: verifica conflito e avança se necessário
+  let dataFinal = d.toISOString().split('T')[0]
+  let tentativas = 0
+  const maxTentativas = 30 // Limite de segurança
+  
+  while (await existeAgendamentoNaData(dataFinal) && tentativas < maxTentativas) {
+    console.log(`⚠️ Data ${dataFinal} já possui agendamento. Buscando próxima data útil...`)
+    
+    // Avança para o próximo dia útil
+    d.setDate(d.getDate() + 1)
+    
+    const diaSemana = d.getDay()
+    dataFinal = d.toISOString().split('T')[0]
+    
+    const ehFimDeSemana = (diaSemana === 0 || diaSemana === 6)
+    const ehFeriado = feriadosSet.has(dataFinal)
+    
+    // Se caiu em fim de semana ou feriado, continua avançando
+    if (ehFimDeSemana || ehFeriado) {
+      continue
+    }
+    
+    tentativas++
+  }
+  
+  if (tentativas >= maxTentativas) {
+    console.error('❌ Não foi possível encontrar data disponível após 30 tentativas')
+  } else if (tentativas > 0) {
+    console.log(`✅ Data ajustada para ${dataFinal} (${tentativas} ajuste(s) realizado(s))`)
+  }
+  
+  return dataFinal
+}
+
 
 // ========================================
 // FUNÇÕES DE CANCELAMENTO
