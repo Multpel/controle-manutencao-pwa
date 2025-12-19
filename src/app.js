@@ -377,46 +377,6 @@ async function carregarEquipamentosDoFirestore() {
 }
 
 /**
- * Busca a data da última manutenção realizada de um equipamento
- * @param {string} equipamentoId - ID do equipamento
- * @returns {Promise<string|null>} Data no formato "YYYY-MM-DD" ou null se nunca foi realizada
- */
-async function buscarUltimaManutencao(equipamentoId) {
-  try {
-    const historicoRef = collection(db, 'historico')
-    const q = query(
-      historicoRef,
-      where('equipamentoId', '==', equipamentoId),
-      where('tipo', '==', 'realizada')
-    )
-    const snap = await getDocs(q)
-
-    if (snap.empty) {
-      return null // Nunca teve manutenção
-    }
-
-    // Encontra a manutenção com a data mais recente
-    let ultimaData = null
-    snap.forEach(doc => {
-      const hist = doc.data()
-      const dataRealizada = hist.dataRealizada
-      
-      if (dataRealizada) {
-        if (!ultimaData || dataRealizada > ultimaData) {
-          ultimaData = dataRealizada
-        }
-      }
-    })
-
-    return ultimaData
-
-  } catch (err) {
-    console.error('❌ Erro ao buscar última manutenção:', err)
-    return null
-  }
-}
-
-/**
  * Busca a data da próxima manutenção agendada de um equipamento
  * @param {string} equipamentoId - ID do equipamento
  * @returns {Promise<string|null>} Data no formato "YYYY-MM-DD" ou null se não tem agendamento
