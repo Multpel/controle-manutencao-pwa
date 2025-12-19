@@ -347,25 +347,6 @@ async function carregarEquipamentosDoFirestore() {
         tdProximaManutencao.textContent = '-'
       })
 
-      // ========================================
-      // Coluna: Ações
-      // ========================================
-      const tdAcoes = document.createElement('td')
-      
-      const btnEditar = document.createElement('button')
-      btnEditar.textContent = '✏️ Editar'
-      btnEditar.className = 'btn-small'
-      btnEditar.addEventListener('click', () => abrirModalEditarEquipamento(docSnap.id, eq))
-      
-      const btnExcluir = document.createElement('button')
-      btnExcluir.textContent = '🗑️ Excluir'
-      btnExcluir.className = 'btn-small btn-danger'
-      btnExcluir.addEventListener('click', () => excluirEquipamento(docSnap.id, eq.nome))
-      
-      tdAcoes.appendChild(btnEditar)
-      tdAcoes.appendChild(btnExcluir)
-      tr.appendChild(tdAcoes)
-
       tbody.appendChild(tr)
     }
 
