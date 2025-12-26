@@ -1850,22 +1850,59 @@ window.loadRelatorios = function() {
 console.log('✅ Funções de relatório definidas no window');
 
 async function exportarRelatorioPDF() {
+    console.log('📄 Iniciando exportação de PDF...');
+    
+    // Verificar se a biblioteca html2pdf está carregada
+    if (typeof html2pdf === 'undefined') {
+        console.error('❌ Biblioteca html2pdf não encontrada');
+        mostrarMensagem('❌ Erro: Biblioteca de PDF não carregada. Recarregue a página.', 'error');
+        return;
+    }
+    
     try {
+        mostrarLoading('Gerando PDF...');
+        
         const elemento = document.getElementById('relatorio-container');
-        const opt = {
-            margin: 10,
-            filename: `agenda-manutencao-${new Date().toISOString().split('T')[0]}.pdf`,
+        
+        if (!elemento) {
+            throw new Error('Container do relatório não encontrado');
+        }
+        
+        // Configurações do PDF
+        const dataAtual = new Date().toISOString().split('T')[0];
+        const opcoes = {
+            margin: [10, 10, 10, 10],
+            filename: `agenda-manutencao-${dataAtual}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+            html2canvas: { 
+                scale: 2,
+                useCORS: true,
+                logging: false
+            },
+            jsPDF: { 
+                orientation: 'landscape', // landscape para caber todas as colunas
+                unit: 'mm', 
+                format: 'a4',
+                compressPDF: true
+            }
         };
-        await html2pdf().set(opt).from(elemento).save();
+        
+        console.log('📄 Gerando PDF...');
+        
+        await html2pdf().set(opcoes).from(elemento).save();
+        
+        esconderLoading();
         mostrarMensagem('✅ PDF exportado com sucesso!', 'success');
-    } catch (error) {
-        console.error('Erro ao exportar PDF:', error);
-        mostrarMensagem('❌ Erro ao exportar PDF', 'error');
+        
+        console.log('✅ PDF gerado com sucesso');
+        
+    } catch (erro) {
+        console.error('❌ Erro ao exportar PDF:', erro);
+        esconderLoading();
+        mostrarMensagem('❌ Erro ao exportar PDF: ' + erro.message, 'error');
     }
 }
+
 
 
 // ============================================
