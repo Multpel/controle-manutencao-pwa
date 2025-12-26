@@ -763,26 +763,6 @@ async function loadAgenda() {
   }
 }
 
-
-
-
-function loadRelatorios() {
-  console.log('📊 Carregando relatórios...')
-  // TODO: Implementar carregamento de relatórios
-}
-
-function filtrarEquipamentosAgendamento(term) {
-  const texto = term.trim().toLowerCase()
-  const itens = document.querySelectorAll('#equipamentos-disponiveis-list .equipamento-item')
-
-  itens.forEach(li => {
-    const nome = (li.dataset.nome || '').toLowerCase()
-    const etiqueta = (li.dataset.etiqueta || '').toLowerCase()
-    const match = nome.includes(texto) || etiqueta.includes(texto)
-    li.style.display = match ? '' : 'none'
-  })
-}
-
 /**
  * Busca a data da última manutenção realizada de um equipamento
  * @param {string} equipamentoId - ID do equipamento
