@@ -7,7 +7,7 @@ import { initializeApp } from 'firebase/app'
 import { getAnalytics } from 'firebase/analytics'
 import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc, query, where, arrayUnion, orderBy, serverTimestamp } from 'firebase/firestore'
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth'
-
+import html2pdf from 'html2pdf.js'
 
 // ========================================
 // CONFIGURAÇÃO DO FIREBASE (COM VARIÁVEIS DE AMBIENTE)
