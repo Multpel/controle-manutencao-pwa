@@ -1350,6 +1350,106 @@ function openCadastroForm() {
 }
 
 // ============================================
+// FUNÇÕES DE UI - LOADING E MENSAGENS
+// ============================================
+
+function mostrarLoading(mensagem = 'Carregando...') {
+  let loadingDiv = document.getElementById('loading-overlay')
+  
+  if (!loadingDiv) {
+    loadingDiv = document.createElement('div')
+    loadingDiv.id = 'loading-overlay'
+    loadingDiv.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    `
+    document.body.appendChild(loadingDiv)
+  }
+
+  loadingDiv.innerHTML = `
+    <div style="
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    ">
+      <div style="
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 15px;
+      "></div>
+      <p style="margin: 0; color: #333; font-weight: 500;">${mensagem}</p>
+    </div>
+
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+  `
+
+  loadingDiv.style.display = 'flex'
+}
+
+function esconderLoading() {
+  const loadingDiv = document.getElementById('loading-overlay')
+  if (loadingDiv) {
+    loadingDiv.style.display = 'none'
+  }
+}
+
+function mostrarMensagem(mensagem, tipo = 'info') {
+  const toast = document.createElement('div')
+  
+  const cores = {
+    success: { bg: '#d4edda', border: '#28a745', text: '#155724' },
+    error: { bg: '#f8d7da', border: '#dc3545', text: '#721c24' },
+    warning: { bg: '#fff3cd', border: '#ffc107', text: '#856404' },
+    info: { bg: '#d1ecf1', border: '#17a2b8', text: '#0c5460' }
+  }
+  
+  const cor = cores[tipo] || cores.info
+  
+  toast.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: ${cor.bg};
+    border: 2px solid ${cor.border};
+    color: ${cor.text};
+    padding: 15px 20px;
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    z-index: 10000;
+    max-width: 350px;
+    animation: slideIn 0.3s ease;
+    font-weight: 500;
+  `
+  
+  toast.textContent = mensagem
+  document.body.appendChild(toast)
+  
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease'
+    setTimeout(() => toast.remove(), 300)
+  }, 3000)
+}
+
+// ============================================
 // TELA DE FERIADOS
 // ============================================
 
@@ -1538,6 +1638,10 @@ window.carregarFeriados = carregarFeriados
 window.salvarFeriado = salvarFeriado
 window.limparFormFeriado = limparFormFeriado
 window.excluirFeriado = excluirFeriado
+window.mostrarLoading = mostrarLoading
+window.esconderLoading = esconderLoading
+window.mostrarMensagem = mostrarMensagem
+
 
 // Exportação ES6
 export { db, analytics }

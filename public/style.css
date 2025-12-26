@@ -684,6 +684,33 @@ body:has(#main-menu:not([style*="display: none"])) {
     z-index: 1000;
 }
 
+/* Animações de Toast */
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+#loading-overlay {
+  font-family: 'Inter', sans-serif;
+}
+
 /* ===================================
    RESPONSIVIDADE
    =================================== */
