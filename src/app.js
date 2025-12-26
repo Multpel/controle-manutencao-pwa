@@ -1597,6 +1597,29 @@ async function excluirFeriado(id, nome) {
 // RELATÓRIOS
 // ============================================
 
+console.log('🔍 CHECKPOINT: Chegou na seção de relatórios');
+
+// VERSÃO SIMPLIFICADA PARA TESTE
+window.gerarRelatorio = async function() {
+    console.log('🔍 FUNÇÃO CHAMADA!');
+    alert('Função gerarRelatorio foi executada!');
+    
+    const tipoRelatorio = document.getElementById('tipo-relatorio').value;
+    
+    try {
+        if (tipoRelatorio === 'agenda-atualizada') {
+            await gerarRelatorioAgendaAtualizada();
+        } else {
+            alert('Tipo de relatório não implementado');
+        }
+    } catch (error) {
+        console.error('❌ Erro:', error);
+        alert('Erro: ' + error.message);
+    }
+};
+
+console.log('🔍 CHECKPOINT: gerarRelatorio foi definida');
+
 async function gerarRelatorio() {
     console.log('🔍 Iniciando geração de relatório...');
     
@@ -1856,7 +1879,7 @@ window.excluirFeriado = excluirFeriado
 window.mostrarLoading = mostrarLoading
 window.esconderLoading = esconderLoading
 window.mostrarMensagem = mostrarMensagem
-window.gerarRelatorio = gerarRelatorio
+//window.gerarRelatorio = gerarRelatorio
 window.exportarRelatorioPDF = exportarRelatorioPDF
 
 
