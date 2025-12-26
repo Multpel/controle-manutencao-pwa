@@ -5,7 +5,7 @@
 
 import { initializeApp } from 'firebase/app'
 import { getAnalytics } from 'firebase/analytics'
-import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc, query, where, arrayUnion } from 'firebase/firestore'
+import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc, query, where, arrayUnion, orderBy, serverTimestamp } from 'firebase/firestore'
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth'
 
 
@@ -1509,7 +1509,7 @@ async function salvarFeriado(event) {
       tipo: tipo,
       recorrente: recorrente,
       ativo: true,
-      criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+      criadoEm: serverTimestamp(),
       criadoPor: auth.currentUser.uid
     })
 
@@ -1599,7 +1599,7 @@ async function excluirFeriado(id, nome) {
   try {
     await updateDoc(doc(db, 'feriados', id), {
       ativo: false,
-      atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+      atualizadoEm: serverTimestamp()
     })
 
     mostrarMensagem('✅ Feriado excluído com sucesso!', 'success')
