@@ -1849,6 +1849,25 @@ window.loadRelatorios = function() {
 
 console.log('✅ Funções de relatório definidas no window');
 
+async function exportarRelatorioPDF() {
+    try {
+        const elemento = document.getElementById('relatorio-container');
+        const opt = {
+            margin: 10,
+            filename: `agenda-manutencao-${new Date().toISOString().split('T')[0]}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+        };
+        await html2pdf().set(opt).from(elemento).save();
+        mostrarMensagem('✅ PDF exportado com sucesso!', 'success');
+    } catch (error) {
+        console.error('Erro ao exportar PDF:', error);
+        mostrarMensagem('❌ Erro ao exportar PDF', 'error');
+    }
+}
+
+
 // ============================================
 // EXPORTAÇÕES GLOBAIS - CRÍTICO!
 // ============================================
