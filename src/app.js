@@ -499,7 +499,7 @@ function abrirModalReagendar({ agendamentoId, equipamentoNome, dataAtual }) {
   document.getElementById("modal-agendamento-id").value = agendamentoId
   document.getElementById("modal-nome-equipamento").value = equipamentoNome || ""
   document.getElementById("modal-nova-data").value = dataAtual || ""
-  document.getElementById("modal-motivo-cancelamento").value = ""
+  document.getElementById("modal-motivo-reagendamento").value = ""
 
   backdrop.style.display = "flex"
 }
