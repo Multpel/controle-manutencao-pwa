@@ -499,7 +499,7 @@ function abrirModalReagendar({ agendamentoId, equipamentoNome, dataAtual }) {
   document.getElementById("modal-agendamento-id").value = agendamentoId
   document.getElementById("modal-nome-equipamento").value = equipamentoNome || ""
   document.getElementById("modal-nova-data").value = dataAtual || ""
-  document.getElementById("modal-motivo-reagendamento").value = ""
+  document.getElementById("modal-motivo-cancelamento").value = ""
 
   backdrop.style.display = "flex"
 }
@@ -555,7 +555,12 @@ async function salvarEdicaoAgendamento(event) {
       return
     }
 
-    // 2. Criar novo agendamento
+    // 2. Buscar dados do equipamento
+    const eqRef = doc(db, 'equipamentos', antigo.codigo)
+    const eqSnap = await getDoc(eqRef)
+    const equipamentoNome = eqSnap.exists() ? eqSnap.data().nome : antigo.equipamento || ''
+
+    // 3. Criar novo agendamento
     const agendaRef = collection(db, "agenda")
     const novoRef = await addDoc(agendaRef, {
       codigo: antigo.codigo,
@@ -571,7 +576,7 @@ async function salvarEdicaoAgendamento(event) {
 
     console.log('✅ Novo agendamento criado:', novoRef.id)
 
-    // 3. Cancelar agendamento antigo
+    // 4. Cancelar agendamento antigo
     await updateDoc(antigoRef, {
       aberto: false,
       status: "cancelado",
@@ -582,7 +587,32 @@ async function salvarEdicaoAgendamento(event) {
 
     console.log('✅ Agendamento antigo cancelado')
 
-    // 4. Fechar modal e recarregar agenda
+    // ========================================
+    // 🆕 5. GRAVAR NO HISTÓRICO
+    // ========================================
+    const historicoRef = collection(db, "historico")
+    await addDoc(historicoRef, {
+      agendamentoId: idAntigo,
+      equipamentoId: antigo.codigo,
+      equipamentoNome: equipamentoNome,
+      tipo: "reagendada",
+      statusCor: null,
+      
+      dataAgendada: antigo.dataPrevista,
+      dataRealizada: null,
+      numeroChamado: null,
+      observacoes: null,
+      
+      motivoCancelamento: null,
+      motivoReagendamento: motivoCancelamento,  // ✅ Motivo do reagendamento
+      dataAnterior: antigo.dataPrevista,        // ✅ Data que foi cancelada
+      novaData: novaData,                        // ✅ Nova data agendada
+      
+      criadoEm: new Date().toISOString()
+    })
+    console.log('✅ Histórico de reagendamento gravado')
+
+    // 6. Fechar modal e recarregar agenda
     fecharModal()
     alert("Reagendamento realizado com sucesso!")
     loadAgenda()
@@ -592,6 +622,7 @@ async function salvarEdicaoAgendamento(event) {
     alert('Erro ao reagendar. Tente novamente.')
   }
 }
+
 
 async function loadAgenda() {
   console.log('📅 Carregando agenda...')
