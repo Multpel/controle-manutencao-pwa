@@ -1593,41 +1593,19 @@ async function excluirFeriado(id, nome) {
   }
 }
 
-// ============================================
+// ========================================
 // RELATÓRIOS
-// ============================================
+// ========================================
 
-console.log('🔍 CHECKPOINT: Chegou na seção de relatórios');
-
-// VERSÃO SIMPLIFICADA PARA TESTE
+// Define as funções diretamente no window para garantir disponibilidade
 window.gerarRelatorio = async function() {
-    console.log('🔍 FUNÇÃO CHAMADA!');
-    alert('Função gerarRelatorio foi executada!');
-    
-    const tipoRelatorio = document.getElementById('tipo-relatorio').value;
-    
-    try {
-        if (tipoRelatorio === 'agenda-atualizada') {
-            await gerarRelatorioAgendaAtualizada();
-        } else {
-            alert('Tipo de relatório não implementado');
-        }
-    } catch (error) {
-        console.error('❌ Erro:', error);
-        alert('Erro: ' + error.message);
-    }
-};
-
-console.log('🔍 CHECKPOINT: gerarRelatorio foi definida');
-
-async function gerarRelatorio() {
     console.log('🔍 Iniciando geração de relatório...');
     
     const tipoRelatorio = document.getElementById('tipo-relatorio').value;
     
     try {
         if (tipoRelatorio === 'agenda-atualizada') {
-            await gerarRelatorioAgendaAtualizada();
+            await window.gerarRelatorioAgendaAtualizada();
         } else {
             mostrarMensagem('⚠️ Tipo de relatório não implementado', 'warning');
         }
@@ -1635,9 +1613,9 @@ async function gerarRelatorio() {
         console.error('❌ Erro na função gerarRelatorio:', error);
         mostrarMensagem('❌ Erro ao gerar relatório: ' + error.message, 'error');
     }
-}
+};
 
-async function gerarRelatorioAgendaAtualizada() {
+window.gerarRelatorioAgendaAtualizada = async function() {
     console.log('📋 Gerando Relatório: Agenda Atualizada');
     
     // Mostrar loading
@@ -1707,7 +1685,7 @@ async function gerarRelatorioAgendaAtualizada() {
         });
         
         // 4. Renderizar relatório
-        renderizarRelatorioAgenda(agendamentos);
+        window.renderizarRelatorioAgenda(agendamentos);
         
         // 5. Mostrar container do relatório
         const container = document.getElementById('relatorio-container');
@@ -1743,9 +1721,9 @@ async function gerarRelatorioAgendaAtualizada() {
         const container = document.getElementById('relatorio-container');
         if (container) container.style.display = 'none';
     }
-}
+};
 
-function renderizarRelatorioAgenda(agendamentos) {
+window.renderizarRelatorioAgenda = function(agendamentos) {
     console.log('🎨 Renderizando relatório com', agendamentos.length, 'registros');
     
     const tbody = document.getElementById('relatorio-tbody');
@@ -1833,14 +1811,33 @@ function renderizarRelatorioAgenda(agendamentos) {
         <span style="margin-left: 15px; color: #ffc107;">⚠ Atrasadas: ${totalAtrasadas}</span>`;
     
     console.log('✅ Relatório renderizado com sucesso');
-}
+};
 
-async function exportarRelatorioPDF() {
+window.exportarRelatorioPDF = function() {
+    console.log('📄 Tentando exportar PDF...');
     mostrarMensagem('📄 Funcionalidade de exportação em desenvolvimento', 'info');
+    
     // TODO: Implementar com html2pdf.js ou jsPDF
-}
+    // Exemplo de implementação futura:
+    /*
+    try {
+        const elemento = document.getElementById('relatorio-container');
+        const opt = {
+            margin: 10,
+            filename: `agenda-manutencao-${new Date().toISOString().split('T')[0]}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+        };
+        html2pdf().set(opt).from(elemento).save();
+    } catch (error) {
+        console.error('Erro ao exportar PDF:', error);
+        mostrarMensagem('❌ Erro ao exportar PDF', 'error');
+    }
+    */
+};
 
-function loadRelatorios() {
+window.loadRelatorios = function() {
     console.log('📊 Tela de relatórios carregada');
     
     // Esconde o relatório até gerar
@@ -1848,8 +1845,9 @@ function loadRelatorios() {
     if (container) {
         container.style.display = 'none';
     }
-}
+};
 
+console.log('✅ Funções de relatório definidas no window');
 
 // ============================================
 // EXPORTAÇÕES GLOBAIS - CRÍTICO!
@@ -1879,10 +1877,6 @@ window.excluirFeriado = excluirFeriado
 window.mostrarLoading = mostrarLoading
 window.esconderLoading = esconderLoading
 window.mostrarMensagem = mostrarMensagem
-//window.gerarRelatorio = gerarRelatorio
-window.exportarRelatorioPDF = exportarRelatorioPDF
-
-
 
 // Exportação ES6
 export { db, analytics }
