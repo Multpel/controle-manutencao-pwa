@@ -1598,191 +1598,233 @@ async function excluirFeriado(id, nome) {
 // ============================================
 
 async function gerarRelatorio() {
-  const tipoRelatorio = document.getElementById('tipo-relatorio').value
-  
-  if (tipoRelatorio === 'agenda-atualizada') {
-    await gerarRelatorioAgendaAtualizada()
-  }
-  // Futuros relatórios aqui
+    console.log('🔍 Iniciando geração de relatório...');
+    
+    const tipoRelatorio = document.getElementById('tipo-relatorio').value;
+    
+    try {
+        if (tipoRelatorio === 'agenda-atualizada') {
+            await gerarRelatorioAgendaAtualizada();
+        } else {
+            mostrarMensagem('⚠️ Tipo de relatório não implementado', 'warning');
+        }
+    } catch (error) {
+        console.error('❌ Erro na função gerarRelatorio:', error);
+        mostrarMensagem('❌ Erro ao gerar relatório: ' + error.message, 'error');
+    }
 }
 
 async function gerarRelatorioAgendaAtualizada() {
-  console.log('📊 Gerando Relatório: Agenda Atualizada')
-  
-  mostrarLoading('Gerando relatório...')
-
-  try {
-    const hoje = new Date()
-    hoje.setHours(0, 0, 0, 0)
-
-    // 1. Buscar todos os agendamentos abertos
-    const agendaRef = collection(db, 'agenda')
-    const q = query(agendaRef, where('aberto', '==', true))
-    const snap = await getDocs(q)
-
-    if (snap.empty) {
-      mostrarMensagem('Nenhum agendamento encontrado', 'info')
-      esconderLoading()
-      return
+    console.log('📋 Gerando Relatório: Agenda Atualizada');
+    
+    // Mostrar loading
+    mostrarLoading('Gerando relatório...');
+    
+    try {
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        
+        // 1. Buscar todos os agendamentos abertos
+        const agendaRef = collection(db, 'agenda');
+        
+        // Query SEM orderBy para evitar erro de índice
+        const q = query(
+            agendaRef, 
+            where('aberto', '==', true)
+        );
+        
+        console.log('🔍 Executando query no Firestore...');
+        const snap = await getDocs(q);
+        console.log(`📊 Query retornou ${snap.size} documentos`);
+        
+        if (snap.empty) {
+            mostrarMensagem('⚠️ Nenhum agendamento pendente encontrado', 'warning');
+            esconderLoading();
+            // Esconder container do relatório
+            const container = document.getElementById('relatorio-container');
+            if (container) container.style.display = 'none';
+            return;
+        }
+        
+        // 2. Buscar dados dos equipamentos e montar array
+        const agendamentos = [];
+        
+        for (const agSnap of snap.docs) {
+            const ag = agSnap.data();
+            console.log(`📦 Processando agendamento: ${agSnap.id}`);
+            
+            // Busca equipamento
+            const eqRef = doc(db, 'equipamentos', ag.codigo);
+            const eqSnap = await getDoc(eqRef);
+            const eq = eqSnap.exists() ? eqSnap.data() : {};
+            
+            // Verificar se está atrasada
+            const dataAgendada = new Date(ag.dataPrevista + 'T00:00:00');
+            const atrasada = dataAgendada < hoje;
+            
+            agendamentos.push({
+                id: agSnap.id,
+                dataAgendada: ag.dataPrevista,
+                equipamento: ag.equipamento || eq.nome || '-',
+                etiqueta: eq.etiqueta || '-',
+                setor: eq.setor || '-',
+                atrasada: atrasada
+            });
+        }
+        
+        console.log(`✅ ${agendamentos.length} agendamentos processados`);
+        
+        // 3. Ordenar: primeiro por data, depois por nome
+        agendamentos.sort((a, b) => {
+            // Ordena por data primeiro
+            const compareData = a.dataAgendada.localeCompare(b.dataAgendada);
+            if (compareData !== 0) return compareData;
+            // Se datas iguais, ordena por nome
+            return a.equipamento.localeCompare(b.equipamento);
+        });
+        
+        // 4. Renderizar relatório
+        renderizarRelatorioAgenda(agendamentos);
+        
+        // 5. Mostrar container do relatório
+        const container = document.getElementById('relatorio-container');
+        if (container) {
+            container.style.display = 'block';
+            
+            // 6. Scroll suave até o relatório
+            setTimeout(() => {
+                container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+        
+        esconderLoading();
+        mostrarMensagem('✅ Relatório gerado com sucesso!', 'success');
+        
+    } catch (erro) {
+        console.error('❌ Erro ao gerar relatório:', erro);
+        console.error('Stack trace:', erro.stack);
+        esconderLoading();
+        
+        // Mensagem de erro mais detalhada
+        let mensagemErro = 'Erro ao gerar relatório';
+        if (erro.code) {
+            mensagemErro += ` (${erro.code})`;
+        }
+        if (erro.message) {
+            mensagemErro += `: ${erro.message}`;
+        }
+        
+        mostrarMensagem('❌ ' + mensagemErro, 'error');
+        
+        // Esconder container do relatório em caso de erro
+        const container = document.getElementById('relatorio-container');
+        if (container) container.style.display = 'none';
     }
-
-    // 2. Buscar dados dos equipamentos e montar array
-    const agendamentos = []
-    
-    for (const agSnap of snap.docs) {
-      const ag = agSnap.data()
-      
-      // Busca equipamento
-      const eqRef = doc(db, 'equipamentos', ag.codigo)
-      const eqSnap = await getDoc(eqRef)
-      const eq = eqSnap.exists() ? eqSnap.data() : {}
-
-      // Verificar se está atrasada
-      const dataAgendada = new Date(ag.dataPrevista + 'T00:00:00')
-      const atrasada = dataAgendada < hoje
-
-      agendamentos.push({
-        id: agSnap.id,
-        dataAgendada: ag.dataPrevista,
-        equipamento: ag.equipamento || eq.nome || '-',
-        etiqueta: eq.etiqueta || '-',
-        setor: eq.setor || '-',
-        atrasada: atrasada
-      })
-    }
-
-    // 3. Ordenar: primeiro por data, depois por nome
-    agendamentos.sort((a, b) => {
-      // Ordena por data primeiro
-      const compareData = a.dataAgendada.localeCompare(b.dataAgendada)
-      if (compareData !== 0) return compareData
-      
-      // Se datas iguais, ordena por nome
-      return a.equipamento.localeCompare(b.equipamento)
-    })
-
-    // 4. Renderizar relatório
-    renderizarRelatorioAgenda(agendamentos)
-    
-    // 5. Mostrar container do relatório
-    document.getElementById('relatorio-container').style.display = 'block'
-    
-    // 6. Scroll suave até o relatório
-    document.getElementById('relatorio-container').scrollIntoView({ behavior: 'smooth' })
-
-    esconderLoading()
-    mostrarMensagem('✅ Relatório gerado com sucesso!', 'success')
-    
-  } catch (erro) {
-    console.error('Erro ao gerar relatório:', erro)
-    mostrarMensagem('Erro ao gerar relatório', 'error')
-    esconderLoading()
-  }
 }
 
 function renderizarRelatorioAgenda(agendamentos) {
-  const tbody = document.getElementById('relatorio-tbody')
-  const total = document.getElementById('relatorio-total')
-  const dataGeracao = document.getElementById('relatorio-data-geracao')
-  
-  // Data de geração
-  const agora = new Date()
-  dataGeracao.textContent = `Gerado em: ${agora.toLocaleDateString('pt-BR')} às ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
-
-  // Limpar tabela
-  tbody.innerHTML = ''
-
-  // Contadores
-  let totalAtrasadas = 0
-  let totalEmDia = 0
-
-  // Preencher tabela
-  agendamentos.forEach(ag => {
-    const tr = document.createElement('tr')
+    console.log('🎨 Renderizando relatório com', agendamentos.length, 'registros');
     
-    // Se atrasada, destaca em vermelho
-    if (ag.atrasada) {
-      tr.style.backgroundColor = '#fee'
-      totalAtrasadas++
-    } else {
-      totalEmDia++
-    }
-
-    // Data
-    const tdData = document.createElement('td')
-    const dataFormatada = new Date(ag.dataAgendada + 'T00:00:00').toLocaleDateString('pt-BR')
-    tdData.textContent = dataFormatada
-    tdData.style.fontWeight = '600'
-
-    // Equipamento
-    const tdEquipamento = document.createElement('td')
-    tdEquipamento.textContent = ag.equipamento
-
-    // Etiqueta
-    const tdEtiqueta = document.createElement('td')
-    tdEtiqueta.textContent = ag.etiqueta
-
-    // Setor
-    const tdSetor = document.createElement('td')
-    tdSetor.textContent = ag.setor
-
-    // Status
-    const tdStatus = document.createElement('td')
-    const badge = document.createElement('span')
-    badge.style.padding = '4px 12px'
-    badge.style.borderRadius = '4px'
-    badge.style.fontWeight = '600'
-    badge.style.fontSize = '13px'
+    const tbody = document.getElementById('relatorio-tbody');
+    const total = document.getElementById('relatorio-total');
+    const dataGeracao = document.getElementById('relatorio-data-geracao');
     
-    if (ag.atrasada) {
-      badge.textContent = '⚠️ Atrasada'
-      badge.style.background = '#ffc107'
-      badge.style.color = '#856404'
-    } else {
-      badge.textContent = '✅ Em dia'
-      badge.style.background = '#d4edda'
-      badge.style.color = '#155724'
+    if (!tbody || !total || !dataGeracao) {
+        console.error('❌ Elementos do relatório não encontrados no DOM');
+        return;
     }
     
-    tdStatus.appendChild(badge)
-
-    tr.appendChild(tdData)
-    tr.appendChild(tdEquipamento)
-    tr.appendChild(tdEtiqueta)
-    tr.appendChild(tdSetor)
-    tr.appendChild(tdStatus)
-
-    tbody.appendChild(tr)
-  })
-
-  // Total
-  total.innerHTML = `
-    <strong>Total de agendamentos:</strong> ${agendamentos.length} 
-    <span style="margin-left: 20px; color: #28a745;">✅ Em dia: ${totalEmDia}</span>
-    <span style="margin-left: 15px; color: #ffc107;">⚠️ Atrasadas: ${totalAtrasadas}</span>
-  `
+    // Data de geração
+    const agora = new Date();
+    dataGeracao.textContent = `Gerado em: ${agora.toLocaleDateString('pt-BR')} às ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    
+    // Limpar tabela
+    tbody.innerHTML = '';
+    
+    // Contadores
+    let totalAtrasadas = 0;
+    let totalEmDia = 0;
+    
+    // Preencher tabela
+    agendamentos.forEach(ag => {
+        const tr = document.createElement('tr');
+        
+        // Se atrasada, destaca em vermelho
+        if (ag.atrasada) {
+            tr.style.backgroundColor = '#fee';
+            totalAtrasadas++;
+        } else {
+            totalEmDia++;
+        }
+        
+        // Data
+        const tdData = document.createElement('td');
+        const dataFormatada = new Date(ag.dataAgendada + 'T00:00:00').toLocaleDateString('pt-BR');
+        tdData.textContent = dataFormatada;
+        tdData.style.fontWeight = '600';
+        
+        // Equipamento
+        const tdEquipamento = document.createElement('td');
+        tdEquipamento.textContent = ag.equipamento;
+        
+        // Etiqueta
+        const tdEtiqueta = document.createElement('td');
+        tdEtiqueta.textContent = ag.etiqueta;
+        
+        // Setor
+        const tdSetor = document.createElement('td');
+        tdSetor.textContent = ag.setor;
+        
+        // Status
+        const tdStatus = document.createElement('td');
+        const badge = document.createElement('span');
+        badge.style.padding = '4px 12px';
+        badge.style.borderRadius = '4px';
+        badge.style.fontWeight = '600';
+        badge.style.fontSize = '13px';
+        
+        if (ag.atrasada) {
+            badge.textContent = 'Atrasada';
+            badge.style.background = '#ffc107';
+            badge.style.color = '#856404';
+        } else {
+            badge.textContent = 'Em dia';
+            badge.style.background = '#d4edda';
+            badge.style.color = '#155724';
+        }
+        
+        tdStatus.appendChild(badge);
+        
+        tr.appendChild(tdData);
+        tr.appendChild(tdEquipamento);
+        tr.appendChild(tdEtiqueta);
+        tr.appendChild(tdSetor);
+        tr.appendChild(tdStatus);
+        
+        tbody.appendChild(tr);
+    });
+    
+    // Total
+    total.innerHTML = `<strong>Total de agendamentos:</strong> ${agendamentos.length} 
+        <span style="margin-left: 20px; color: #28a745;">✓ Em dia: ${totalEmDia}</span> 
+        <span style="margin-left: 15px; color: #ffc107;">⚠ Atrasadas: ${totalAtrasadas}</span>`;
+    
+    console.log('✅ Relatório renderizado com sucesso');
 }
 
 async function exportarRelatorioPDF() {
-  mostrarMensagem('⚠️ Funcionalidade de exportação em desenvolvimento', 'info')
-  
-  // TODO: Implementar com html2pdf.js
-  // const elemento = document.getElementById('relatorio-container')
-  // const opcoes = {
-  //   margin: 10,
-  //   filename: `agenda-atualizada-${new Date().toLocaleDateString('pt-BR')}.pdf`,
-  //   image: { type: 'jpeg', quality: 0.98 },
-  //   html2canvas: { scale: 2 },
-  //   jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-  // }
-  // html2pdf().set(opcoes).from(elemento).save()
+    mostrarMensagem('📄 Funcionalidade de exportação em desenvolvimento', 'info');
+    // TODO: Implementar com html2pdf.js ou jsPDF
 }
 
 function loadRelatorios() {
-  console.log('📊 Tela de relatórios carregada')
-  // Esconde o relatório até gerar
-  const container = document.getElementById('relatorio-container')
-  if (container) container.style.display = 'none'
+    console.log('📊 Tela de relatórios carregada');
+    
+    // Esconde o relatório até gerar
+    const container = document.getElementById('relatorio-container');
+    if (container) {
+        container.style.display = 'none';
+    }
 }
 
 
