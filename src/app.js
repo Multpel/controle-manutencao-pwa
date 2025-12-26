@@ -1393,7 +1393,6 @@ async function salvarFeriado(event) {
   mostrarLoading('Salvando feriado...')
 
   try {
-    // Verificar se já existe
     const feriados = collection(db, 'feriados')
     const q = query(feriados, where('data', '==', data), where('ativo', '==', true))
     const snap = await getDocs(q)
@@ -1404,7 +1403,6 @@ async function salvarFeriado(event) {
       return
     }
 
-    // Salvar novo feriado
     await addDoc(feriados, {
       data: data,
       nome: nome,
@@ -1475,10 +1473,7 @@ async function carregarFeriados() {
             <div class="feriado-nome">${f.nome} (${recorrente})</div>
           </div>
           <div class="feriado-acoes">
-            <button class="btn-icon-small" onclick="editarFeriado('${doc.id}', '${f.data}', '${f.nome}', '${f.tipo}', ${f.recorrente})" title="Editar">
-              ✏️
-            </button>
-            <button class="btn-icon-small btn-danger" onclick="excluirFeriado('${doc.id}', '${f.nome}')" title="Excluir">
+            <button class="btn-icon-small" onclick="excluirFeriado('${doc.id}', '${f.nome}')" title="Excluir">
               🗑️
             </button>
           </div>
@@ -1496,14 +1491,31 @@ async function carregarFeriados() {
   }
 }
 
-async function editarFeriado(id, data, nome, tipo, recorrente) {
-  const novoNome = prompt('Novo nome:', nome)
-  if (!novoN
+async function excluirFeriado(id, nome) {
+  if (!confirm(`Deseja excluir o feriado "${nome}"?`)) return
 
+  mostrarLoading('Excluindo feriado...')
 
-// ========================================
-// EXPORTAÇÕES GLOBAIS (CRÍTICO!)
-// ========================================
+  try {
+    await updateDoc(doc(db, 'feriados', id), {
+      ativo: false,
+      atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+    })
+
+    mostrarMensagem('✅ Feriado excluído com sucesso!', 'success')
+    carregarFeriados()
+    
+  } catch (erro) {
+    console.error('Erro ao excluir feriado:', erro)
+    mostrarMensagem('Erro ao excluir feriado', 'error')
+  } finally {
+    esconderLoading()
+  }
+}
+
+// ============================================
+// EXPORTAÇÕES GLOBAIS - CRÍTICO!
+// ============================================
 window.showScreen = showScreen
 window.navigateToScreen = navigateToScreen
 window.backToMenu = backToMenu
@@ -1521,7 +1533,11 @@ window.salvarExecucaoManutencao = salvarExecucaoManutencao
 window.abrirModalCancelar = abrirModalCancelar
 window.fecharModalCancelar = fecharModalCancelar
 window.salvarCancelamento = salvarCancelamento
-
+window.mostrarTelaFeriados = mostrarTelaFeriados
+window.carregarFeriados = carregarFeriados
+window.salvarFeriado = salvarFeriado
+window.limparFormFeriado = limparFormFeriado
+window.excluirFeriado = excluirFeriado
 
 // Exportação ES6
 export { db, analytics }
