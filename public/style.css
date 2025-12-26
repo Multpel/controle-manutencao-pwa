@@ -711,6 +711,74 @@ body:has(#main-menu:not([style*="display: none"])) {
   font-family: 'Inter', sans-serif;
 }
 
+/* ============================================
+   RELATÓRIOS
+   ============================================ */
+
+.relatorio-header {
+    page-break-after: avoid;
+}
+
+.relatorio-header h2 {
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.relatorio-footer {
+    font-size: 14px;
+    page-break-before: avoid;
+}
+
+#relatorio-container {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-top: 30px;
+}
+
+#relatorio-table {
+    margin: 20px 0;
+}
+
+#relatorio-table thead {
+    background: #2c3e50;
+    color: white;
+}
+
+#relatorio-table th {
+    padding: 12px;
+    font-weight: 600;
+}
+
+#relatorio-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+#relatorio-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+/* Estilos para impressão/PDF */
+@media print {
+    .screen-header,
+    .screen-actions,
+    .btn {
+        display: none !important;
+    }
+
+    #relatorio-container {
+        box-shadow: none;
+        padding: 0;
+    }
+
+    body {
+        background: white;
+    }
+}
+
+
 /* ===================================
    RESPONSIVIDADE
    =================================== */
