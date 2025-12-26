@@ -1349,6 +1349,158 @@ function openCadastroForm() {
   showScreen('cadastro-equipamento-screen', 'novo')
 }
 
+// ============================================
+// TELA DE FERIADOS
+// ============================================
+
+function mostrarTelaFeriados() {
+  console.log('📅 Abrindo tela de feriados')
+  esconderTodasTelas()
+  document.getElementById('feriados-screen').style.display = 'block'
+  inicializarFiltroAnoFeriado()
+  carregarFeriados()
+}
+
+function esconderTodasTelas() {
+  const screens = document.querySelectorAll('.screen')
+  screens.forEach(s => s.style.display = 'none')
+  const menu = document.getElementById('main-menu')
+  if (menu) menu.style.display = 'none'
+}
+
+function inicializarFiltroAnoFeriado() {
+  const select = document.getElementById('filtro-ano-feriado')
+  const anoAtual = new Date().getFullYear()
+  
+  if (select) {
+    select.value = anoAtual
+  }
+}
+
+async function salvarFeriado(event) {
+  event.preventDefault()
+  
+  const data = document.getElementById('feriado-data').value
+  const nome = document.getElementById('feriado-nome').value.trim()
+  const tipo = document.getElementById('feriado-tipo').value
+  const recorrente = document.getElementById('feriado-recorrente').checked
+
+  if (!data || !nome || !tipo) {
+    mostrarMensagem('Preencha todos os campos obrigatórios', 'warning')
+    return
+  }
+
+  mostrarLoading('Salvando feriado...')
+
+  try {
+    // Verificar se já existe
+    const feriados = collection(db, 'feriados')
+    const q = query(feriados, where('data', '==', data), where('ativo', '==', true))
+    const snap = await getDocs(q)
+
+    if (!snap.empty) {
+      mostrarMensagem('Já existe um feriado cadastrado nesta data', 'warning')
+      esconderLoading()
+      return
+    }
+
+    // Salvar novo feriado
+    await addDoc(feriados, {
+      data: data,
+      nome: nome,
+      tipo: tipo,
+      recorrente: recorrente,
+      ativo: true,
+      criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+      criadoPor: auth.currentUser.uid
+    })
+
+    mostrarMensagem('✅ Feriado cadastrado com sucesso!', 'success')
+    limparFormFeriado()
+    carregarFeriados()
+    
+  } catch (erro) {
+    console.error('Erro ao salvar feriado:', erro)
+    mostrarMensagem('Erro ao cadastrar feriado', 'error')
+  } finally {
+    esconderLoading()
+  }
+}
+
+function limparFormFeriado() {
+  document.getElementById('form-feriado').reset()
+  document.getElementById('feriado-recorrente').checked = true
+}
+
+async function carregarFeriados() {
+  const ano = document.getElementById('filtro-ano-feriado').value || new Date().getFullYear()
+  const inicio = `${ano}-01-01`
+  const fim = `${ano}-12-31`
+
+  const loading = document.getElementById('loading-feriados')
+  const lista = document.getElementById('lista-feriados')
+  const empty = document.getElementById('empty-feriados')
+
+  if (loading) loading.style.display = 'block'
+  if (lista) lista.innerHTML = ''
+  if (empty) empty.style.display = 'none'
+
+  try {
+    const feriados = collection(db, 'feriados')
+    const q = query(
+      feriados,
+      where('data', '>=', inicio),
+      where('data', '<=', fim),
+      where('ativo', '==', true),
+      orderBy('data', 'asc')
+    )
+
+    const snap = await getDocs(q)
+
+    if (snap.empty) {
+      if (empty) empty.style.display = 'block'
+      return
+    }
+
+    const items = snap.docs.map(doc => {
+      const f = doc.data()
+      const dataFormatada = new Date(f.data + 'T00:00:00').toLocaleDateString('pt-BR')
+      const tipoIcon = f.tipo === 'nacional' ? '🇧🇷' : f.tipo === 'estadual' ? '🏛️' : '🏙️'
+      const recorrente = f.recorrente ? '🔄 Recorrente' : '📅 Único'
+
+      return `
+        <div class="feriado-item">
+          <div class="feriado-info">
+            <div class="feriado-data">${dataFormatada} • ${tipoIcon} ${f.tipo}</div>
+            <div class="feriado-nome">${f.nome} (${recorrente})</div>
+          </div>
+          <div class="feriado-acoes">
+            <button class="btn-icon-small" onclick="editarFeriado('${doc.id}', '${f.data}', '${f.nome}', '${f.tipo}', ${f.recorrente})" title="Editar">
+              ✏️
+            </button>
+            <button class="btn-icon-small btn-danger" onclick="excluirFeriado('${doc.id}', '${f.nome}')" title="Excluir">
+              🗑️
+            </button>
+          </div>
+        </div>
+      `
+    }).join('')
+
+    if (lista) lista.innerHTML = items
+    
+  } catch (erro) {
+    console.error('Erro ao carregar feriados:', erro)
+    mostrarMensagem('Erro ao carregar feriados', 'error')
+  } finally {
+    if (loading) loading.style.display = 'none'
+  }
+}
+
+async function editarFeriado(id, data, nome, tipo, recorrente) {
+  const novoNome = prompt('Novo nome:', nome)
+  if (!novoN
+
+
 // ========================================
 // EXPORTAÇÕES GLOBAIS (CRÍTICO!)
 // ========================================

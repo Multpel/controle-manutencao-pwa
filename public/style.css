@@ -211,6 +211,19 @@ body:has(#main-menu:not([style*="display: none"])) {
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
 }
 
+.btn-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    color: white;
+}
+
+.btn-info:hover {
+    background: linear-gradient(135deg, #138496 0%, #0f6674 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(23, 162, 184, 0.3);
+}
+
+
+
 /* ===================================
    TABELAS
    =================================== */
@@ -556,6 +569,110 @@ body:has(#main-menu:not([style*="display: none"])) {
 .status-red {
     background-color: #dc3545;
 }
+
+/* ===================================
+   Lista de Feriados
+   =================================== */
+.lista-feriados {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.feriado-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #3498db;
+    transition: all 0.3s ease;
+}
+
+.feriado-item:hover {
+    background: #e9ecef;
+    transform: translateX(4px);
+}
+
+.feriado-info {
+    flex: 1;
+}
+
+.feriado-data {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.feriado-nome {
+    color: #555;
+    margin-top: 4px;
+    font-size: 13px;
+}
+
+.feriado-acoes {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-icon-small {
+    background: white;
+    border: 1px solid #ddd;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.btn-icon-small:hover {
+    background: #f0f0f0;
+    border-color: #999;
+}
+
+.btn-icon-small.btn-danger:hover {
+    background: #fee;
+    border-color: #e74c3c;
+    color: #e74c3c;
+}
+
+.filtro-ano {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filtro-ano label {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.filtro-ano select {
+    max-width: 120px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 14px;
+}
+
+.checkbox-label input[type="checkbox"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
+.btn.btn-sm {
+    padding: 8px 16px;
+    font-size: 13px;
+}
+
+
 
 /* ===================================
    TOAST CONTAINER

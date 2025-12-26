@@ -238,10 +238,14 @@
             <button class="btn btn-primary" onclick="showScreen('agendamento-pesquisa-screen')">
                 <i class="fas fa-plus"></i> Novo Agendamento
             </button>
+            <button class="btn btn-info" onclick="mostrarTelaFeriados()">
+                <i class="fas fa-calendar-check"></i> Cadastro de Feriados
+            </button>
             <button class="btn btn-secondary" onclick="showScreen('main-menu')">
                 <i class="fas fa-arrow-left"></i> Voltar
             </button>
         </footer>
+
     </div>
 </div>
 
@@ -317,6 +321,99 @@
         </footer>
     </div>
 </div>
+
+<!-- ========================================
+     TELA: GERENCIAR FERIADOS
+     ======================================== -->
+<div class="screen" id="feriados-screen" style="display: none;">
+    <div class="screen-wrapper form-wrapper">
+        <header class="screen-header">
+            <h1><i class="fas fa-calendar-check"></i> Cadastro de Feriados</h1>
+        </header>
+
+        <div class="screen-content">
+            <!-- FORMULÁRIO DE CADASTRO -->
+            <form id="form-feriado" onsubmit="salvarFeriado(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="feriado-data">Data (AAAA-MM-DD) *</label>
+                        <input type="date" id="feriado-data" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="feriado-nome">Nome do Feriado *</label>
+                        <input type="text" id="feriado-nome" placeholder="Ex: Natal" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="feriado-tipo">Tipo *</label>
+                        <select id="feriado-tipo" required>
+                            <option value="">Selecione...</option>
+                            <option value="nacional">🇧🇷 Nacional</option>
+                            <option value="estadual">🏛️ Estadual</option>
+                            <option value="municipal">🏙️ Municipal</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="feriado-recorrente" checked>
+                        <span>🔄 Recorrente (repete todo ano)</span>
+                    </label>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Salvar Feriado
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="limparFormFeriado()">
+                        <i class="fas fa-redo"></i> Limpar
+                    </button>
+                </div>
+            </form>
+
+            <!-- FILTRO E LISTA -->
+            <div style="margin-top: 30px; border-top: 2px solid #e9ecef; padding-top: 20px;">
+                <div class="filtro-ano" style="margin-bottom: 20px;">
+                    <label for="filtro-ano-feriado">📅 Ano:</label>
+                    <select id="filtro-ano-feriado" class="form-control" onchange="carregarFeriados()">
+                        <option value="2025">2025</option>
+                        <option value="2026">2026</option>
+                        <option value="2027">2027</option>
+                        <option value="2028">2028</option>
+                        <option value="2029">2029</option>
+                        <option value="2030">2030</option>
+                    </select>
+                    <button class="btn btn-sm" onclick="carregarFeriados()" style="margin-left: 10px;">
+                        🔄 Atualizar
+                    </button>
+                </div>
+
+                <h3 style="margin-bottom: 15px;">📋 Feriados Cadastrados</h3>
+                
+                <div id="loading-feriados" class="loading" style="display: none;">
+                    <p>Carregando...</p>
+                </div>
+
+                <div id="lista-feriados" class="lista-feriados">
+                    <!-- Preenchido dinamicamente -->
+                </div>
+
+                <div id="empty-feriados" class="empty-state" style="display: none; padding: 20px; text-align: center;">
+                    <p>📅 Nenhum feriado cadastrado para este ano</p>
+                </div>
+            </div>
+        </div>
+
+        <footer class="screen-actions">
+            <button class="btn btn-secondary" onclick="showScreen('agenda-screen')">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </button>
+        </footer>
+    </div>
+</div>
+
 
 <!-- ========================================
      MODAL: EDITAR/REAGENDAR AGENDAMENTO
