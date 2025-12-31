@@ -87,6 +87,16 @@ document.addEventListener('DOMContentLoaded', function() {
   newCadastroBtns.forEach(btn => {
     btn.addEventListener('click', openCadastroForm)
   })
+  
+// Botão de Feriados
+  const btnFeriados = document.getElementById('btn-feriados')
+  if (btnFeriados) {
+    btnFeriados.addEventListener('click', function(e) {
+      e.preventDefault()
+      mostrarTelaFeriados()
+    })
+  }
+
 
   // Registrar Service Worker
 // if ('serviceWorker' in navigator) {
