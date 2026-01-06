@@ -908,6 +908,10 @@ async function salvarEquipamento(e) {
   }
 }
 
+function filtrarEquipamentosAgendamento() {
+  console.log('🔍 Filtro de equipamentos - funcionalidade em desenvolvimento')
+
+
 async function salvarAgendamento(e) {
   e.preventDefault()
 
