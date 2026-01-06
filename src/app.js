@@ -1953,4 +1953,4 @@ window.esconderLoading = esconderLoading
 window.mostrarMensagem = mostrarMensagem
 
 // Exportação ES6
-export { db, analytics }
+export { db, analytics };
