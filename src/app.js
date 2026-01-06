@@ -1468,52 +1468,77 @@ function inicializarFiltroAnoFeriado() {
 }
 
 async function salvarFeriado(event) {
-  event.preventDefault()
-  
-  const data = document.getElementById('feriado-data').value
-  const nome = document.getElementById('feriado-nome').value.trim()
-  const tipo = document.getElementById('feriado-tipo').value
-  const recorrente = document.getElementById('feriado-recorrente').checked
-
-  if (!data || !nome || !tipo) {
-    mostrarMensagem('Preencha todos os campos obrigatórios', 'warning')
-    return
-  }
-
-  mostrarLoading('Salvando feriado...')
-
-  try {
-    const feriados = collection(db, 'feriados')
-    const q = query(feriados, where('data', '==', data), where('ativo', '==', true))
-    const snap = await getDocs(q)
-
-    if (!snap.empty) {
-      mostrarMensagem('Já existe um feriado cadastrado nesta data', 'warning')
-      esconderLoading()
-      return
-    }
-
-    await addDoc(feriados, {
-      data: data,
-      nome: nome,
-      tipo: tipo,
-      recorrente: recorrente,
-      ativo: true,
-      criadoEm: serverTimestamp(),
-      criadoPor: auth.currentUser.uid
-    })
-
-    mostrarMensagem('✅ Feriado cadastrado com sucesso!', 'success')
-    limparFormFeriado()
-    carregarFeriados()
+    event.preventDefault();
     
-  } catch (erro) {
-    console.error('Erro ao salvar feriado:', erro)
-    mostrarMensagem('Erro ao cadastrar feriado', 'error')
-  } finally {
-    esconderLoading()
-  }
+    const data = document.getElementById('feriado-data').value;
+    const nome = document.getElementById('feriado-nome').value.trim();
+    const tipo = document.getElementById('feriado-tipo').value;
+    const recorrente = document.getElementById('feriado-recorrente').checked;
+    
+    if (!data || !nome || !tipo) {
+        mostrarMensagem('⚠️ Preencha todos os campos obrigatórios', 'warning');
+        return;
+    }
+    
+    mostrarLoading('Salvando feriado...');
+    
+    try {
+        // 1. Verificar se já existe
+        const feriadosRef = collection(db, 'feriados');
+        const q = query(feriadosRef, where('data', '==', data), where('ativo', '==', true));
+        const snap = await getDocs(q);
+        
+        if (!snap.empty) {
+            mostrarMensagem('⚠️ Já existe um feriado cadastrado nesta data', 'warning');
+            esconderLoading();
+            return;
+        }
+        
+        // 2. Criar objeto do feriado
+        const novoFeriado = {
+            data: data,
+            nome: nome,
+            tipo: tipo,
+            recorrente: recorrente,
+            ativo: true,
+            criadoEm: serverTimestamp()
+        };
+        
+        // Adiciona criadoPor apenas se houver usuário logado
+        if (auth.currentUser) {
+            novoFeriado.criadoPor = auth.currentUser.uid;
+        }
+        
+        // 3. Salvar no Firestore
+        console.log('📝 Salvando feriado:', novoFeriado);
+        await addDoc(feriadosRef, novoFeriado);
+        
+        console.log('✅ Feriado salvo com sucesso');
+        esconderLoading();
+        mostrarMensagem('✅ Feriado cadastrado com sucesso!', 'success');
+        
+        limparFormFeriado();
+        carregarFeriados();
+        
+    } catch (erro) {
+        console.error('❌ Erro ao salvar feriado:', erro);
+        console.error('Código do erro:', erro.code);
+        console.error('Mensagem:', erro.message);
+        
+        esconderLoading();
+        
+        // Mensagem de erro mais detalhada
+        let mensagemErro = 'Erro ao cadastrar feriado';
+        if (erro.code === 'permission-denied') {
+            mensagemErro = 'Sem permissão para salvar. Verifique as regras do Firestore.';
+        } else if (erro.message) {
+            mensagemErro += ': ' + erro.message;
+        }
+        
+        mostrarMensagem('❌ ' + mensagemErro, 'error');
+    }
 }
+
 
 function limparFormFeriado() {
   document.getElementById('form-feriado').reset()
