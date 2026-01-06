@@ -908,10 +908,6 @@ async function salvarEquipamento(e) {
   }
 }
 
-function filtrarEquipamentosAgendamento() {
-  console.log('🔍 Filtro de equipamentos - funcionalidade em desenvolvimento')
-
-
 async function salvarAgendamento(e) {
   e.preventDefault()
 
@@ -1953,4 +1949,4 @@ window.esconderLoading = esconderLoading
 window.mostrarMensagem = mostrarMensagem
 
 // Exportação ES6
-export { db, analytics };
+export { db, analytics }
