@@ -9,6 +9,8 @@ import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, updateD
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth'
 import html2pdf from 'html2pdf.js'
 
+console.log('🟢 ARQUIVO COMEÇOU A EXECUTAR');  // ← ADICIONE AQUI
+
 // ========================================
 // CONFIGURAÇÃO DO FIREBASE (COM VARIÁVEIS DE AMBIENTE)
 // ========================================
@@ -1947,6 +1949,10 @@ window.excluirFeriado = excluirFeriado
 window.mostrarLoading = mostrarLoading
 window.esconderLoading = esconderLoading
 window.mostrarMensagem = mostrarMensagem
+
+console.log('🟢 CHEGOU ATÉ O FINAL - TUDO OK');  // ← ADICIONE AQUI
+console.log('🟢 carregarFeriados existe?', typeof window.carregarFeriados);  // ← E AQUI
+
 
 // Exportação ES6
 export { db, analytics }
