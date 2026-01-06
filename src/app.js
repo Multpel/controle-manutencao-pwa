@@ -9,8 +9,6 @@ import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, updateD
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth'
 import html2pdf from 'html2pdf.js'
 
-console.log('🟢 ARQUIVO COMEÇOU A EXECUTAR');  // ← ADICIONE AQUI
-
 // ========================================
 // CONFIGURAÇÃO DO FIREBASE (COM VARIÁVEIS DE AMBIENTE)
 // ========================================
@@ -263,111 +261,120 @@ window.doLogout = doLogout
 // ========================================
 
 async function carregarEquipamentosDoFirestore() {
-  console.log('📦 Carregando equipamentos...')
-  
-  try {
-    const tbody = document.querySelector('#equipamentos-tbody')
-    if (!tbody) {
-      console.warn('⚠️ Tabela de equipamentos não encontrada')
-      return
-    }
-
-    tbody.innerHTML = '' // Limpa tabela
-
-    // Carrega todos os equipamentos
-    const eqRef = collection(db, 'equipamentos')
-    const snap = await getDocs(eqRef)
-
-    if (snap.empty) {
-      const tr = document.createElement('tr')
-      const td = document.createElement('td')
-      td.colSpan = 6 // São 6 colunas agora
-      td.textContent = 'Nenhum equipamento cadastrado.'
-      td.style.textAlign = 'center'
-      tr.appendChild(td)
-      tbody.appendChild(tr)
-      return
-    }
-
-    // Para cada equipamento, busca última e próxima manutenção
-    for (const docSnap of snap.docs) {
-      const eq = docSnap.data()
-      const equipamentoId = docSnap.id
-
-      const tr = document.createElement('tr')
-
-      // Coluna: Nome
-      const tdNome = document.createElement('td')
-      tdNome.textContent = eq.nome || '-'
-      tr.appendChild(tdNome)
-
-      // Coluna: Etiqueta
-      const tdEtiqueta = document.createElement('td')
-      tdEtiqueta.textContent = eq.etiqueta || '-'
-      tr.appendChild(tdEtiqueta)
-
-      // Coluna: Setor
-      const tdSetor = document.createElement('td')
-      tdSetor.textContent = eq.setor || '-'
-      tr.appendChild(tdSetor)
-
-      // ========================================
-      // 🆕 COLUNA: Última Manutenção
-      // ========================================
-      const tdUltimaManutencao = document.createElement('td')
-      tdUltimaManutencao.textContent = 'Carregando...'
-      tdUltimaManutencao.style.fontSize = '0.9em'
-      tr.appendChild(tdUltimaManutencao)
-
-      buscarUltimaManutencao(equipamentoId).then(dataUltima => {
-        if (dataUltima) {
-          const dataFormatada = formatarDataBR(dataUltima)
-          tdUltimaManutencao.textContent = dataFormatada
-          tdUltimaManutencao.style.color = '#28a745' // Verde
-          tdUltimaManutencao.style.fontWeight = 'bold'
-        } else {
-          tdUltimaManutencao.textContent = 'Nunca realizada'
-          tdUltimaManutencao.style.color = '#6c757d' // Cinza
-          tdUltimaManutencao.style.fontStyle = 'italic'
+    console.log('📦 Carregando equipamentos...');
+    
+    try {
+        const tbody = document.querySelector('#equipamentos-tbody');
+        if (!tbody) {
+            console.warn('Tabela não encontrada');
+            return;
         }
-      }).catch(err => {
-        console.error('❌ Erro ao buscar última manutenção:', err)
-        tdUltimaManutencao.textContent = '-'
-      })
-
-      // ========================================
-      // 🆕 COLUNA: Próxima Manutenção
-      // ========================================
-      const tdProximaManutencao = document.createElement('td')
-      tdProximaManutencao.textContent = 'Carregando...'
-      tdProximaManutencao.style.fontSize = '0.9em'
-      tr.appendChild(tdProximaManutencao)
-
-      buscarProximaManutencao(equipamentoId).then(dataProxima => {
-        if (dataProxima) {
-          const dataFormatada = formatarDataBR(dataProxima)
-          tdProximaManutencao.textContent = dataFormatada
-          tdProximaManutencao.style.color = '#007bff' // Azul
-          tdProximaManutencao.style.fontWeight = 'bold'
-        } else {
-          tdProximaManutencao.textContent = 'Sem agendamento'
-          tdProximaManutencao.style.color = '#6c757d' // Cinza
-          tdProximaManutencao.style.fontStyle = 'italic'
+        
+        tbody.innerHTML = '';
+        
+        // Buscar apenas equipamentos ATIVOS
+        const eqRef = collection(db, 'equipamentos');
+        const q = query(eqRef, where('ativo', '!=', false));
+        const snap = await getDocs(q);
+        
+        if (snap.empty) {
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.colSpan = 7; // 7 colunas agora (incluindo Ações)
+            td.textContent = 'Nenhum equipamento ativo cadastrado.';
+            td.style.textAlign = 'center';
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            return;
         }
-      }).catch(err => {
-        console.error('❌ Erro ao buscar próxima manutenção:', err)
-        tdProximaManutencao.textContent = '-'
-      })
-
-      tbody.appendChild(tr)
+        
+        for (const docSnap of snap.docs) {
+            const eq = docSnap.data();
+            const equipamentoId = docSnap.id;
+            
+            const tr = document.createElement('tr');
+            
+            // Colunas Nome, Etiqueta, Setor (mantém como está)
+            const tdNome = document.createElement('td');
+            tdNome.textContent = eq.nome || '-';
+            tr.appendChild(tdNome);
+            
+            const tdEtiqueta = document.createElement('td');
+            tdEtiqueta.textContent = eq.etiqueta || '-';
+            tr.appendChild(tdEtiqueta);
+            
+            const tdSetor = document.createElement('td');
+            tdSetor.textContent = eq.setor || '-';
+            tr.appendChild(tdSetor);
+            
+            // Última e Próxima Manutenção (mantém como está)
+            const tdUltimaManutencao = document.createElement('td');
+            tdUltimaManutencao.textContent = 'Carregando...';
+            tdUltimaManutencao.style.fontSize = '0.9em';
+            tr.appendChild(tdUltimaManutencao);
+            
+            buscarUltimaManutencao(equipamentoId).then(dataUltima => {
+                if (dataUltima) {
+                    tdUltimaManutencao.textContent = formatarDataBR(dataUltima);
+                    tdUltimaManutencao.style.color = '#28a745';
+                    tdUltimaManutencao.style.fontWeight = 'bold';
+                } else {
+                    tdUltimaManutencao.textContent = 'Nunca realizada';
+                    tdUltimaManutencao.style.color = '#6c757d';
+                    tdUltimaManutencao.style.fontStyle = 'italic';
+                }
+            });
+            
+            const tdProximaManutencao = document.createElement('td');
+            tdProximaManutencao.textContent = 'Carregando...';
+            tdProximaManutencao.style.fontSize = '0.9em';
+            tr.appendChild(tdProximaManutencao);
+            
+            buscarProximaManutencao(equipamentoId).then(dataProxima => {
+                if (dataProxima) {
+                    tdProximaManutencao.textContent = formatarDataBR(dataProxima);
+                    tdProximaManutencao.style.color = '#007bff';
+                    tdProximaManutencao.style.fontWeight = 'bold';
+                } else {
+                    tdProximaManutencao.textContent = 'Sem agendamento';
+                    tdProximaManutencao.style.color = '#6c757d';
+                    tdProximaManutencao.style.fontStyle = 'italic';
+                }
+            });
+            
+            // COLUNA AÇÕES - Botão Inativar
+            const tdAcoes = document.createElement('td');
+            tdAcoes.style.display = 'flex';
+            tdAcoes.style.gap = '8px';
+            tdAcoes.style.justifyContent = 'center';
+            
+            const btnInativar = document.createElement('button');
+            btnInativar.type = 'button';
+            btnInativar.className = 'btn btn-secondary';
+            btnInativar.style.fontSize = '0.85rem';
+            btnInativar.style.padding = '6px 12px';
+            btnInativar.style.background = '#dc3545';
+            btnInativar.style.color = 'white';
+            btnInativar.style.borderColor = '#dc3545';
+            btnInativar.innerHTML = '<i class="fas fa-trash-alt"></i> Inativar';
+            btnInativar.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                inativarEquipamento(equipamentoId, eq.nome);
+            });
+            
+            tdAcoes.appendChild(btnInativar);
+            tr.appendChild(tdAcoes);
+            
+            tbody.appendChild(tr);
+        }
+        
+        console.log(`✅ ${snap.size} equipamentos carregados`);
+        
+    } catch (err) {
+        console.error('❌ Erro ao carregar equipamentos:', err);
     }
-
-    console.log(`✅ ${snap.size} equipamento(s) carregado(s)`)
-
-  } catch (err) {
-    console.error('❌ Erro ao carregar equipamentos:', err)
-  }
 }
+
 
 /**
  * Busca a data da próxima manutenção agendada de um equipamento
@@ -882,6 +889,7 @@ async function salvarEquipamento(e) {
         nome,
         setor,
         etiqueta,
+		ativo: true,
         criadoEm: new Date().toISOString()
       })
 
@@ -1919,6 +1927,56 @@ async function exportarRelatorioPDF() {
     }
 }
 
+// ========================================
+// FUNÇÃO: INATIVAR EQUIPAMENTO
+// ========================================
+async function inativarEquipamento(equipamentoId, nomeEquipamento) {
+    console.log('🗑️ Solicitando inativação do equipamento:', equipamentoId);
+    
+    // Confirmação do usuário
+    if (!confirm(`Deseja realmente inativar o equipamento "${nomeEquipamento}"?`)) {
+        console.log('❌ Inativação cancelada pelo usuário');
+        return;
+    }
+    
+    mostrarLoading('Inativando equipamento...');
+    
+    try {
+        // 1. Verificar se tem agendamento aberto
+        const agendaRef = collection(db, 'agenda');
+        const qAgenda = query(agendaRef, where('codigo', '==', equipamentoId), where('aberto', '==', true));
+        const snapAgenda = await getDocs(qAgenda);
+        
+        if (!snapAgenda.empty) {
+            esconderLoading();
+            alert('❌ Não é possível inativar este equipamento!\n\nMotivo: Possui agendamento(s) de manutenção em aberto.\n\nCancele os agendamentos primeiro.');
+            return;
+        }
+        
+        // 2. Marcar como inativo no Firestore
+        const equipRef = doc(db, 'equipamentos', equipamentoId);
+        await updateDoc(equipRef, {
+            ativo: false,
+            dataInativacao: new Date().toISOString(),
+            inativadoPor: auth.currentUser?.uid || 'sistema'
+        });
+        
+        console.log('✅ Equipamento inativado com sucesso no Firestore');
+        
+        esconderLoading();
+        mostrarMensagem(`✅ Equipamento "${nomeEquipamento}" inativado com sucesso!`, 'success');
+        
+        // 3. Recarregar a lista
+        setTimeout(() => {
+            carregarEquipamentosDoFirestore();
+        }, 500);
+        
+    } catch (erro) {
+        console.error('❌ Erro ao inativar equipamento:', erro);
+        esconderLoading();
+        mostrarMensagem('❌ Erro ao inativar equipamento: ' + erro.message, 'error');
+    }
+}
 
 
 // ============================================
@@ -1949,10 +2007,7 @@ window.excluirFeriado = excluirFeriado
 window.mostrarLoading = mostrarLoading
 window.esconderLoading = esconderLoading
 window.mostrarMensagem = mostrarMensagem
-
-console.log('🟢 CHEGOU ATÉ O FINAL - TUDO OK');  // ← ADICIONE AQUI
-console.log('🟢 carregarFeriados existe?', typeof window.carregarFeriados);  // ← E AQUI
-
+window.inativarEquipamento = inativarEquipamento
 
 // Exportação ES6
 export { db, analytics }
